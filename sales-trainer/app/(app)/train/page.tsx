@@ -4,7 +4,7 @@ import { createSession } from '@/lib/actions/sessions'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Treinar — Sales Trainer' }
+export const metadata: Metadata = { title: 'Treinar — Negociarte' }
 
 type CustomerProfile = Database['public']['Tables']['customer_profiles']['Row']
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row']

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Sales Trainer',
+  title: 'Negociarte',
   description: 'Plataforma de treinamento de vendas com IA',
 }
 

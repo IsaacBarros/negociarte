@@ -6,7 +6,7 @@ import { FeedbackCard } from '@/components/chat/feedback-card'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Transcrição — Sales Trainer' }
+export const metadata: Metadata = { title: 'Transcrição — Negociarte' }
 
 type Message = Database['public']['Tables']['messages']['Row']
 type Feedback = Database['public']['Tables']['session_feedback']['Row']

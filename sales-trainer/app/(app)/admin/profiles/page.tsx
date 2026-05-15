@@ -5,7 +5,7 @@ import { toggleProfileActive } from '@/lib/actions/profiles'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Perfis de clientes — Sales Trainer' }
+export const metadata: Metadata = { title: 'Perfis de clientes — Negociarte' }
 
 type Profile = Database['public']['Tables']['customer_profiles']['Row']
 

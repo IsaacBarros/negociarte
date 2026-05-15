@@ -51,7 +51,7 @@ export function PromptPreview({ values }: Props) {
   return (
     <div className="sticky top-6">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium">Preview do system prompt</span>
+        <span className="text-sm font-medium">Prompt oculto do avatar</span>
         <button
           type="button"
           onClick={() => navigator.clipboard.writeText(prompt)}

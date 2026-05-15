@@ -26,6 +26,7 @@ export function AppSidebar({ profile }: { profile: Profile }) {
 
   const navItems = isAdmin
     ? [
+        { href: '/train', label: 'Treinar' },
         { href: '/admin/profiles', label: 'Perfis de clientes' },
         { href: '/admin/sessions', label: 'Sessões' },
         { href: '/admin/analytics', label: 'Analytics' },
@@ -36,7 +37,7 @@ export function AppSidebar({ profile }: { profile: Profile }) {
     <aside className="flex h-screen w-56 flex-col border-r border-neutral-200 bg-white">
       {/* Logo */}
       <div className="flex h-14 items-center border-b border-neutral-200 px-4">
-        <span className="font-semibold tracking-tight">Sales Trainer</span>
+        <span className="font-semibold tracking-tight">Negociarte</span>
       </div>
 
       {/* Action button */}

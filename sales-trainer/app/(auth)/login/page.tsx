@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
-  title: 'Entrar — Sales Trainer',
+  title: 'Entrar — Negociarte',
 }
 
 export default async function LoginPage({
@@ -39,7 +39,7 @@ export default async function LoginPage({
     <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Sales Trainer</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Negociarte</h1>
           <p className="mt-1 text-sm text-neutral-500">Entre na sua conta para continuar</p>
         </div>
         {error === 'missing_profile' && (

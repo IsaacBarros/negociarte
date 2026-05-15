@@ -60,7 +60,9 @@ export async function POST(request: Request) {
   // Busca dados do perfil
   const { data: profileRaw } = await (adminClient as any)
     .from('customer_profiles')
-    .select('name, difficulty_level, scenario_type')
+    .select(
+      'name, difficulty_level, scenario_type, visit_objective, success_criteria, sales_process_context, sales_competencies_context',
+    )
     .eq('id', session.customer_profile_id)
     .single()
 
@@ -68,6 +70,24 @@ export async function POST(request: Request) {
     name: string
     difficulty_level: string | null
     scenario_type: string | null
+    visit_objective: string | null
+    success_criteria: string | null
+    sales_process_context: string | null
+    sales_competencies_context: string | null
+  } | null
+
+  const { data: behaviorStyleRaw } = session.behavior_style_id
+    ? await (adminClient as any)
+        .from('behavior_styles')
+        .select('name, description, evaluation_criteria')
+        .eq('id', session.behavior_style_id)
+        .single()
+    : { data: null }
+
+  const behaviorStyle = behaviorStyleRaw as {
+    name: string
+    description: string
+    evaluation_criteria: string | null
   } | null
 
   const { data: messages } = await (adminClient as any)
@@ -95,6 +115,7 @@ export async function POST(request: Request) {
         behavior_style_id: session.behavior_style_id,
         outcome: session.outcome,
         customer_profiles: profile,
+        behavior_styles: behaviorStyle,
       },
       messages: messages as { role: 'user' | 'assistant'; content: string }[],
     })

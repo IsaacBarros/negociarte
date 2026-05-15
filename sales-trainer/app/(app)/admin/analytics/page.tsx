@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Analytics — Sales Trainer' }
+export const metadata: Metadata = { title: 'Analytics — Negociarte' }
 
 export default async function AdminAnalyticsPage() {
   const user = await requireAdmin()

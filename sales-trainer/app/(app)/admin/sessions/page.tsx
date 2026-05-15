@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Sessões — Sales Trainer' }
+export const metadata: Metadata = { title: 'Sessões — Negociarte' }
 
 const statusLabel: Record<string, string> = {
   active: 'Em andamento',

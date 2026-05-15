@@ -7,7 +7,7 @@ import type { UIMessage } from 'ai'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Sessão de treino — Sales Trainer' }
+export const metadata: Metadata = { title: 'Sessão de treino — Negociarte' }
 
 type Feedback = Database['public']['Tables']['session_feedback']['Row']
 

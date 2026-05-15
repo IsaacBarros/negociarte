@@ -6,7 +6,7 @@ import { updateProfile } from '@/lib/actions/profiles'
 import { BuilderForm } from '@/components/profile-builder/builder-form'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Editar perfil — Sales Trainer' }
+export const metadata: Metadata = { title: 'Editar perfil — Negociarte' }
 
 export default async function EditProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -4,6 +4,15 @@ import type { Database } from '@/types/database'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+  const pathname = request.nextUrl.pathname
+
+  // Rotas públicas que não exigem autenticação nem refresh de sessão.
+  const publicRoutes = ['/login', '/signup', '/auth/callback', '/api/auth/', '/api/webhooks/']
+  const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
+
+  if (isPublicRoute) {
+    return supabaseResponse
+  }
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,13 +38,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-
-  // Rotas públicas que não exigem autenticação
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/api/auth/', '/api/webhooks/']
-  const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
-
-  if (!user && !isPublicRoute) {
+  if (!user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirect', pathname)

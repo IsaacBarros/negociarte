@@ -4,7 +4,7 @@ import { createProfile } from '@/lib/actions/profiles'
 import { BuilderForm } from '@/components/profile-builder/builder-form'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Novo perfil — Sales Trainer' }
+export const metadata: Metadata = { title: 'Novo perfil — Negociarte' }
 
 export default async function NewProfilePage() {
   await requireAdmin()
