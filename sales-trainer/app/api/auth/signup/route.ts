@@ -9,11 +9,12 @@ const SignupSchema = z.object({
   password: z.string().min(8),
 })
 
-// Usa service role para criar org + perfil atomicamente
-const adminClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 const defaultBehaviorStyles = [
   {
@@ -51,6 +52,7 @@ const defaultBehaviorStyles = [
 ]
 
 export async function POST(request: Request) {
+  const adminClient = createAdminClient()
   const body: unknown = await request.json()
   const result = SignupSchema.safeParse(body)
 

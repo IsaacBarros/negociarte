@@ -9,12 +9,15 @@ const WebhookSchema = z.object({
   session_id: z.string().uuid(),
 })
 
-const adminClient = createSupabaseAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
+function createAdminClient() {
+  return createSupabaseAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
 
 export async function POST(request: Request) {
+  const adminClient = createAdminClient()
   const secret = process.env.N8N_WEBHOOK_SECRET
   if (secret) {
     const providedSecret = request.headers.get('x-webhook-secret')
