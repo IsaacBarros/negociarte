@@ -1,0 +1,16 @@
+.git
+.next
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env*.local
+Dockerfile
+docker-compose*.yml
+README.md
+coverage
+playwright-report
+test-results
+*.tsbuildinfo

@@ -1,0 +1,103 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+
+type Profile = {
+  id: string
+  full_name: string | null
+  email: string
+  role: 'admin' | 'seller'
+  organization_id: string
+}
+
+export function AppSidebar({ profile }: { profile: Profile }) {
+  const pathname = usePathname()
+  const router = useRouter()
+
+  async function handleSignOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const isAdmin = profile.role === 'admin'
+
+  const navItems = isAdmin
+    ? [
+        { href: '/admin/profiles', label: 'Perfis de clientes' },
+        { href: '/admin/sessions', label: 'Sessões' },
+        { href: '/admin/analytics', label: 'Analytics' },
+      ]
+    : [{ href: '/train', label: 'Treinar' }]
+
+  return (
+    <aside className="flex h-screen w-56 flex-col border-r border-neutral-200 bg-white">
+      {/* Logo */}
+      <div className="flex h-14 items-center border-b border-neutral-200 px-4">
+        <span className="font-semibold tracking-tight">Sales Trainer</span>
+      </div>
+
+      {/* Action button */}
+      <div className="px-3 py-3">
+        {isAdmin ? (
+          <Link
+            href="/admin/profiles/new"
+            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50"
+          >
+            <span>+</span> Novo perfil
+          </Link>
+        ) : (
+          <Link
+            href="/train"
+            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"
+          >
+            + Nova sessão
+          </Link>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-1">
+        {navItems.map((item) => {
+          const active = pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center rounded-md px-3 py-1.5 text-sm ${
+                active ? 'bg-neutral-100 font-medium' : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-neutral-200 px-3 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-xs font-medium uppercase">
+            {(profile.full_name ?? profile.email).charAt(0)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium">
+              {profile.full_name ?? profile.email}
+            </p>
+            <p className="text-xs text-neutral-400 capitalize">{profile.role}</p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-neutral-400 hover:text-neutral-900"
+            title="Sair"
+          >
+            Sair
+          </button>
+        </div>
+      </div>
+    </aside>
+  )
+}
