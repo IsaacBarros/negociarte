@@ -1,10 +1,6 @@
 services:
   sales-trainer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: sales-trainer:latest
-    container_name: sales-trainer
+    image: ghcr.io/isaacbarros/negociarte-sales-trainer:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
