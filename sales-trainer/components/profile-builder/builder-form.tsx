@@ -31,27 +31,11 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
     defaultValues: {
       name: initialData?.name ?? '',
       description: initialData?.description ?? '',
-      buyer_role: initialData?.buyer_role ?? '',
-      industry: initialData?.industry ?? '',
-      company_size: initialData?.company_size ?? '',
-      pain_points: initialData?.pain_points ?? '',
-      objections: initialData?.objections ?? '',
-      budget_context: initialData?.budget_context ?? '',
-      decision_authority: initialData?.decision_authority ?? '',
-      personality_traits: initialData?.personality_traits ?? '',
       communication_style: initialData?.communication_style ?? '',
-      product_context: initialData?.product_context ?? '',
       visible_briefing: initialData?.visible_briefing ?? '',
+      budget_context: initialData?.budget_context ?? '',
+      objections: initialData?.objections ?? '',
       visit_objective: initialData?.visit_objective ?? '',
-      success_criteria: initialData?.success_criteria ?? '',
-      confidential_context: initialData?.confidential_context ?? '',
-      sales_process_context: initialData?.sales_process_context ?? '',
-      sales_competencies_context: initialData?.sales_competencies_context ?? '',
-      market_situation: initialData?.market_situation ?? '',
-      competition_context: initialData?.competition_context ?? '',
-      marketing_strategy: initialData?.marketing_strategy ?? '',
-      scenario_type: initialData?.scenario_type as CustomerProfileInput['scenario_type'],
-      difficulty_level: initialData?.difficulty_level as CustomerProfileInput['difficulty_level'],
       is_active: initialData?.is_active ?? true,
     },
   })
@@ -89,38 +73,6 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
     }
   }
 
-  const shortFields = [
-    { name: 'buyer_role' as const, label: 'Papel do comprador', placeholder: 'Ex: Diretor Financeiro' },
-    { name: 'industry' as const, label: 'Setor / Indústria', placeholder: 'Ex: SaaS B2B' },
-    { name: 'company_size' as const, label: 'Tamanho da empresa', placeholder: 'Ex: 100-500 funcionários' },
-    { name: 'budget_context' as const, label: 'Contexto de orçamento', placeholder: 'Ex: Orçamento apertado, precisa justificar ROI' },
-    { name: 'decision_authority' as const, label: 'Autoridade de decisão', placeholder: 'Ex: Decisor final, mas consulta o CEO' },
-  ]
-
-  const longFields = [
-    { name: 'visible_briefing' as const, label: 'Briefing visível ao participante', placeholder: 'Informações que o vendedor deve receber antes da visita: contexto do cliente, situação e pontos permitidos.' },
-    { name: 'visit_objective' as const, label: 'Objetivo da visita', placeholder: 'Ex: Identificar dores, apresentar proposta e conseguir compromisso para piloto.' },
-    { name: 'success_criteria' as const, label: 'Critérios de sucesso', placeholder: 'Liste o que precisa acontecer para o cliente aceitar avançar ou aceitar a proposta.' },
-    { name: 'pain_points' as const, label: 'Dores / Problemas', placeholder: 'Descreva os principais problemas que esse comprador enfrenta...' },
-    { name: 'objections' as const, label: 'Objeções típicas', placeholder: 'Liste as objeções que esse comprador costuma fazer...' },
-    { name: 'personality_traits' as const, label: 'Traços de personalidade', placeholder: 'Ex: Cético, analítico, direto, impaciente com argumentos vagos' },
-    { name: 'communication_style' as const, label: 'Estilo de comunicação', placeholder: 'Ex: Formal, faz muitas perguntas, prefere dados a histórias' },
-    { name: 'product_context' as const, label: 'O que o vendedor vende', placeholder: 'Ex: Uma plataforma de CRM para equipes de vendas B2B' },
-    { name: 'sales_process_context' as const, label: 'Processo de vendas a observar', placeholder: 'Etapas e comportamentos esperados do vendedor. Informação oculta para avaliação.' },
-    { name: 'sales_competencies_context' as const, label: 'Competências de vendas avaliadas', placeholder: 'Competências, indicadores e erros esperados. Informação oculta para avaliação.' },
-    { name: 'market_situation' as const, label: 'Situação do mercado', placeholder: 'Contexto de mercado que influencia a conversa. Informação de apoio ao avatar.' },
-    { name: 'competition_context' as const, label: 'Concorrência', placeholder: 'Concorrentes, alternativas e comparações que o cliente pode levantar.' },
-    { name: 'marketing_strategy' as const, label: 'Estratégia de marketing da empresa', placeholder: 'Posicionamento e mensagens estratégicas que a IA pode usar sem revelar como base interna.' },
-    { name: 'confidential_context' as const, label: 'Contexto confidencial do avatar', placeholder: 'Informações internas que a IA pode usar para simular, mas nunca deve revelar ao participante.' },
-  ]
-
-  const suggestableFields = new Set([
-    'visible_briefing', 'visit_objective', 'success_criteria', 'pain_points', 'objections',
-    'personality_traits', 'communication_style', 'budget_context', 'decision_authority',
-    'sales_process_context', 'sales_competencies_context', 'market_situation',
-    'competition_context', 'marketing_strategy',
-  ])
-
   return (
     <div className="flex gap-6">
       {/* Formulário */}
@@ -137,14 +89,14 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
           <input
             {...register('name')}
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-            placeholder="Ex: Pedro, diretor financeiro da rede Alfa"
+            placeholder="Ex: Pedro, comprador da rede Alfa"
           />
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
 
         {/* Descrição */}
         <div className="space-y-1">
-          <label className="text-sm font-medium">Descrição curta</label>
+          <label className="text-sm font-medium">Descrição</label>
           <input
             {...register('description')}
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
@@ -152,84 +104,102 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
           />
         </div>
 
-        {/* Campos curtos */}
-        <div className="grid grid-cols-2 gap-4">
-          {shortFields.map(({ name, label, placeholder }) => (
-            <div key={name} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">{label}</label>
-                {suggestableFields.has(name) && (
-                  <button
-                    type="button"
-                    onClick={() => handleSuggest(name)}
-                    disabled={suggestingField === name}
-                    className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                  >
-                    {suggestingField === name ? 'Sugerindo...' : 'Sugerir ✨'}
-                  </button>
-                )}
-              </div>
-              <input
-                {...register(name)}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
+        {/* Estilo de Comportamento */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Estilo de Comportamento</label>
+          <select
+            {...register('communication_style')}
+            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 bg-white"
+          >
+            <option value="">Selecione um estilo...</option>
+            <option value="Estilo 1">Estilo 1</option>
+            <option value="Estilo 2">Estilo 2</option>
+            <option value="Estilo 3">Estilo 3</option>
+            <option value="Estilo 4">Estilo 4</option>
+          </select>
         </div>
 
-        {/* Campos longos */}
-        {longFields.map(({ name, label, placeholder }) => (
-          <div key={name} className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">{label}</label>
-              {suggestableFields.has(name) && (
-                <button
-                  type="button"
-                  onClick={() => handleSuggest(name)}
-                  disabled={suggestingField === name}
-                  className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                >
-                  {suggestingField === name ? 'Sugerindo...' : 'Sugerir ✨'}
-                </button>
-              )}
-            </div>
-            <textarea
-              {...register(name)}
-              rows={3}
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-              placeholder={placeholder}
-            />
-          </div>
-        ))}
-
-        {/* Selects */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Cenário</label>
-            <select
-              {...register('scenario_type')}
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+        {/* Contexto de Compra */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Contexto de Compra</label>
+            <button
+              type="button"
+              onClick={() => handleSuggest('visible_briefing')}
+              disabled={suggestingField === 'visible_briefing'}
+              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
             >
-              <option value="">Selecione...</option>
-              <option value="discovery">Discovery</option>
-              <option value="objection_handling">Tratamento de objeções</option>
-              <option value="closing">Fechamento</option>
-            </select>
+              {suggestingField === 'visible_briefing' ? 'Sugerindo...' : 'Sugerir ✨'}
+            </button>
           </div>
+          <textarea
+            {...register('visible_briefing')}
+            rows={4}
+            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            placeholder="Descreva o contexto comercial, situação do cliente e o briefing da compra..."
+          />
+        </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Dificuldade</label>
-            <select
-              {...register('difficulty_level')}
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+        {/* Valor Disponível */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Valor Disponível</label>
+            <button
+              type="button"
+              onClick={() => handleSuggest('budget_context')}
+              disabled={suggestingField === 'budget_context'}
+              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
             >
-              <option value="">Selecione...</option>
-              <option value="easy">Fácil</option>
-              <option value="medium">Médio</option>
-              <option value="hard">Difícil</option>
-            </select>
+              {suggestingField === 'budget_context' ? 'Sugerindo...' : 'Sugerir ✨'}
+            </button>
           </div>
+          <input
+            {...register('budget_context')}
+            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            placeholder="Ex: Orçamento de até R$ 50.000,00 ou verba flexível"
+          />
+        </div>
+
+        {/* Objeções Típicas */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Objeções Típicas</label>
+            <button
+              type="button"
+              onClick={() => handleSuggest('objections')}
+              disabled={suggestingField === 'objections'}
+              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              {suggestingField === 'objections' ? 'Sugerindo...' : 'Sugerir ✨'}
+            </button>
+          </div>
+          <textarea
+            {...register('objections')}
+            rows={3}
+            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            placeholder="Ex: Acha o preço elevado, prefere concorrente local..."
+          />
+        </div>
+
+        {/* Objetivo da Visita */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Objetivo da Visita</label>
+            <button
+              type="button"
+              onClick={() => handleSuggest('visit_objective')}
+              disabled={suggestingField === 'visit_objective'}
+              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              {suggestingField === 'visit_objective' ? 'Sugerindo...' : 'Sugerir ✨'}
+            </button>
+          </div>
+          <textarea
+            {...register('visit_objective')}
+            rows={3}
+            className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            placeholder="Ex: Entender as reais necessidades, propor demo técnica..."
+          />
         </div>
 
         {/* Ativo */}
