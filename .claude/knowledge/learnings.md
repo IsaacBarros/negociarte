@@ -48,6 +48,22 @@ Injetar `Relationships: []` no tipo gerado em `types/database.ts` resolveu a rai
 
 Também adicionamos o diretório `.next-dev/**` aos ignores do ESLint (`eslint.config.mjs`) para evitar que arquivos temporários gerados em desenvolvimento poluam o output do linter.
 
+---
+
+## 2026-05-20 — pnpm e build
+
+**Categoria:** Ops | Bug
+
+O build não falhava por código. Falhava porque `sales-trainer/node_modules` estava inconsistente: symlinks de pacotes como `next`, `eslint` e `typescript` apontavam para `../../node_modules/.pnpm/...`, mas o store virtual real estava em `sales-trainer/node_modules/.pnpm`.
+
+Decisão: limpar `node_modules` e reinstalar com `pnpm install --frozen-lockfile`. No sandbox isso falha porque o pnpm precisa escrever no SQLite do store global; rodar fora do sandbox.
+
+Também foi removido `pnpm.onlyBuiltDependencies` do `sales-trainer/package.json`, pois pnpm atual ignora essa chave. A configuração válida fica em `pnpm-workspace.yaml`.
+
+Foi adicionado `packageManager` na raiz para fixar `pnpm@11.1.2`. Em `next.config.ts`, `turbopack.root = __dirname` evita warning de workspace root quando scripts rodam pela raiz.
+
+Pendente: `pnpm run lint` passa com 1 warning em `components/profile-builder/builder-form.tsx:43`: `watch()` do React Hook Form faz React Compiler pular memoização. Build passa.
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

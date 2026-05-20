@@ -6,6 +6,9 @@ const nextConfig = (phase: string): NextConfig => {
 
   return {
     ...(isDev ? { distDir: '.next-dev' } : { output: 'standalone' as const }),
+    turbopack: {
+      root: __dirname,
+    },
   }
 }
 

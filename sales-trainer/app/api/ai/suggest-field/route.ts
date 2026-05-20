@@ -11,15 +11,20 @@ const RequestSchema = z.object({
 })
 
 const fieldLabels: Record<string, string> = {
+  buyer_role: 'cargo ou papel do comprador',
+  industry: 'segmento de mercado da empresa do cenário',
+  company_size: 'porte e estrutura da empresa do cenário',
   pain_points: 'principais dores e problemas que o comprador enfrenta',
   objections: 'objeções típicas que o comprador faz a propostas de venda',
   personality_traits: 'traços de personalidade do comprador',
   communication_style: 'estilo de comunicação do comprador',
+  product_context: 'produto ou serviço vendido no cenário',
   budget_context: 'contexto de orçamento do comprador',
   decision_authority: 'autoridade e processo de decisão do comprador',
   visible_briefing: 'briefing visível ao participante antes da visita',
   visit_objective: 'objetivo da visita comercial',
   success_criteria: 'critérios de sucesso para a visita',
+  confidential_context: 'contexto confidencial do cliente que orienta a simulação',
   sales_process_context: 'processo de vendas esperado para avaliação',
   sales_competencies_context: 'competências de vendas que serão avaliadas',
   market_situation: 'situação de mercado do caso',

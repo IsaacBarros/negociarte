@@ -11,13 +11,6 @@
     "test": "vitest",
     "test:e2e": "playwright test"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "msw",
-      "sharp",
-      "unrs-resolver"
-    ]
-  },
   "dependencies": {
     "@ai-sdk/react": "^3.0.182",
     "@base-ui/react": "^1.4.1",

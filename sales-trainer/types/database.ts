@@ -60,6 +60,8 @@ export type Database = {
           id: string
           organization_id: string
           created_by: string | null
+          company_id: string | null
+          customer_id: string | null
           name: string
           description: string | null
           buyer_role: string | null
@@ -92,6 +94,8 @@ export type Database = {
           id?: string
           organization_id: string
           created_by?: string | null
+          company_id?: string | null
+          customer_id?: string | null
           name: string
           description?: string | null
           buyer_role?: string | null
@@ -124,6 +128,8 @@ export type Database = {
           id?: string
           organization_id?: string
           created_by?: string | null
+          company_id?: string | null
+          customer_id?: string | null
           name?: string
           description?: string | null
           buyer_role?: string | null
@@ -148,6 +154,114 @@ export type Database = {
           scenario_type?: string | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | null
           system_prompt?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scenario_companies: {
+        Row: {
+          id: string
+          organization_id: string
+          created_by: string | null
+          name: string
+          description: string | null
+          industry: string | null
+          company_size: string | null
+          product_context: string | null
+          market_situation: string | null
+          competition_context: string | null
+          marketing_strategy: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          created_by?: string | null
+          name: string
+          description?: string | null
+          industry?: string | null
+          company_size?: string | null
+          product_context?: string | null
+          market_situation?: string | null
+          competition_context?: string | null
+          marketing_strategy?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          created_by?: string | null
+          name?: string
+          description?: string | null
+          industry?: string | null
+          company_size?: string | null
+          product_context?: string | null
+          market_situation?: string | null
+          competition_context?: string | null
+          marketing_strategy?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scenario_customers: {
+        Row: {
+          id: string
+          organization_id: string
+          created_by: string | null
+          name: string
+          description: string | null
+          buyer_role: string | null
+          pain_points: string | null
+          objections: string | null
+          budget_context: string | null
+          decision_authority: string | null
+          personality_traits: string | null
+          communication_style: string | null
+          confidential_context: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          created_by?: string | null
+          name: string
+          description?: string | null
+          buyer_role?: string | null
+          pain_points?: string | null
+          objections?: string | null
+          budget_context?: string | null
+          decision_authority?: string | null
+          personality_traits?: string | null
+          communication_style?: string | null
+          confidential_context?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          created_by?: string | null
+          name?: string
+          description?: string | null
+          buyer_role?: string | null
+          pain_points?: string | null
+          objections?: string | null
+          budget_context?: string | null
+          decision_authority?: string | null
+          personality_traits?: string | null
+          communication_style?: string | null
+          confidential_context?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string

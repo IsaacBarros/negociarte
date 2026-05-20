@@ -27,7 +27,6 @@ export function AppSidebar({ profile }: { profile: Profile }) {
   const navItems = isAdmin
     ? [
         { href: '/train', label: 'Treinar' },
-        { href: '/admin/profiles', label: 'Perfis de clientes' },
         { href: '/admin/sessions', label: 'Sessões' },
         { href: '/admin/analytics', label: 'Analytics' },
       ]
@@ -47,7 +46,7 @@ export function AppSidebar({ profile }: { profile: Profile }) {
             href="/admin/profiles/new"
             className="flex w-full items-center justify-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50"
           >
-            <span>+</span> Novo perfil
+            <span>+</span> Novo cenário
           </Link>
         ) : (
           <Link
@@ -61,6 +60,42 @@ export function AppSidebar({ profile }: { profile: Profile }) {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-1">
+        {isAdmin && (
+          <div className="space-y-0.5">
+            <Link
+              href="/admin/profiles"
+              className={`flex items-center rounded-md px-3 py-1.5 text-sm ${
+                pathname.startsWith('/admin/profiles')
+                  ? 'bg-neutral-100 font-medium'
+                  : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              Cenários
+            </Link>
+            <div className="ml-3 border-l border-neutral-200 pl-2">
+              {[
+                { href: '/admin/companies', label: 'Empresas' },
+                { href: '/admin/customers', label: 'Clientes' },
+                { href: '/admin/profiles/new', label: 'Novo cenário' },
+              ].map((item) => {
+                const active = pathname.startsWith(item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center rounded-md px-3 py-1.5 text-sm ${
+                      active
+                        ? 'bg-neutral-100 font-medium'
+                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {navItems.map((item) => {
           const active = pathname.startsWith(item.href)
           return (

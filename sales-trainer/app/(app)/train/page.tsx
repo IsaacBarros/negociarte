@@ -52,7 +52,7 @@ export default async function TrainPage() {
     'id' | 'title' | 'status' | 'started_at' | 'customer_profile_id'
   >[]
 
-  // Busca nomes dos perfis das sessões recentes
+  // Busca nomes dos cenários das sessões recentes
   const profileIds = [...new Set(sessions.map((s) => s.customer_profile_id))]
   const { data: sessionProfilesRaw } = profileIds.length
     ? await supabase.from('customer_profiles').select('id, name').in('id', profileIds)
@@ -64,7 +64,7 @@ export default async function TrainPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
-      <h1 className="mb-2 text-xl font-semibold">Escolha um cliente para simular</h1>
+      <h1 className="mb-2 text-xl font-semibold">Escolha um cenário para simular</h1>
       <p className="mb-6 text-sm text-neutral-500">
         Leia o briefing e o objetivo da visita antes de iniciar. O estilo comportamental do cliente
         será sorteado automaticamente pelo simulador.
@@ -72,8 +72,8 @@ export default async function TrainPage() {
 
       {!profiles.length && (
         <div className="rounded-lg border border-dashed border-neutral-200 px-6 py-16 text-center">
-          <p className="text-sm text-neutral-500">Nenhum perfil disponível no momento.</p>
-          <p className="mt-1 text-sm text-neutral-400">Aguarde seu gestor criar perfis de treino.</p>
+          <p className="text-sm text-neutral-500">Nenhum cenário disponível no momento.</p>
+          <p className="mt-1 text-sm text-neutral-400">Aguarde seu gestor criar cenários de treino.</p>
         </div>
       )}
 

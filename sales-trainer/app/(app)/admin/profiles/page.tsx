@@ -5,7 +5,7 @@ import { toggleProfileActive } from '@/lib/actions/profiles'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
-export const metadata: Metadata = { title: 'Perfis de clientes — Negociarte' }
+export const metadata: Metadata = { title: 'Cenários — Negociarte' }
 
 type Profile = Database['public']['Tables']['customer_profiles']['Row']
 
@@ -34,23 +34,23 @@ export default async function AdminProfilesPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Perfis de clientes</h1>
+        <h1 className="text-xl font-semibold">Cenários</h1>
         <Link
           href="/admin/profiles/new"
           className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
         >
-          + Novo perfil
+          + Novo cenário
         </Link>
       </div>
 
       {!typedProfiles.length && (
         <div className="rounded-lg border border-dashed border-neutral-200 px-6 py-16 text-center">
-          <p className="text-sm text-neutral-500">Nenhum perfil criado ainda.</p>
+          <p className="text-sm text-neutral-500">Nenhum cenário criado ainda.</p>
           <Link
             href="/admin/profiles/new"
             className="mt-3 inline-block text-sm font-medium underline"
           >
-            Criar primeiro perfil
+            Criar primeiro cenário
           </Link>
         </div>
       )}

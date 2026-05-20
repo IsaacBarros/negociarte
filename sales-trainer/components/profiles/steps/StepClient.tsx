@@ -1,0 +1,159 @@
+'use client'
+
+import { ProfileFormField } from '@/components/profiles/ProfileFormField'
+import { ProfileSectionCard } from '@/components/profiles/ProfileSectionCard'
+import type { StepProps } from './types'
+
+const inputClass =
+  'w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900'
+const textareaClass =
+  'w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900'
+
+export function StepClient({ form, suggestField, suggestingField, customers = [] }: StepProps) {
+  const {
+    register,
+    watch,
+    formState: { errors },
+  } = form
+  const selectedCustomer = customers.find((customer) => customer.id === watch('customer_id'))
+
+  return (
+    <ProfileSectionCard
+      title="Cliente"
+      description="Persona simulada: papel, dores, objeções, decisão e comportamento."
+    >
+      <ProfileFormField label="Cliente do cenário" required error={errors.customer_id?.message}>
+        <select
+          {...register('customer_id', { setValueAs: (value) => value || undefined })}
+          className={`${inputClass} bg-white`}
+        >
+          <option value="">Selecione um cliente...</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </select>
+        {selectedCustomer && (
+          <div className="rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+            <p className="font-medium text-neutral-900">{selectedCustomer.name}</p>
+            {selectedCustomer.buyer_role && <p className="mt-1">{selectedCustomer.buyer_role}</p>}
+            {selectedCustomer.description && <p className="mt-1">{selectedCustomer.description}</p>}
+          </div>
+        )}
+      </ProfileFormField>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <ProfileFormField label="Nome do cliente" required error={errors.name?.message}>
+          <input {...register('name')} className={inputClass} placeholder="Ex: Pedro Almeida" />
+        </ProfileFormField>
+
+        <ProfileFormField label="Cargo ou papel" error={errors.buyer_role?.message}>
+          <input
+            {...register('buyer_role')}
+            className={inputClass}
+            placeholder="Ex: Diretor Comercial"
+          />
+        </ProfileFormField>
+      </div>
+
+      <ProfileFormField label="Descrição curta" error={errors.description?.message}>
+        <input
+          {...register('description')}
+          className={inputClass}
+          placeholder="Resumo para identificar este cliente na lista."
+        />
+      </ProfileFormField>
+
+      <ProfileFormField
+        label="Dores do cliente"
+        error={errors.pain_points?.message}
+        suggestable
+        suggestLoading={suggestingField === 'pain_points'}
+        onSuggest={() => void suggestField('pain_points')}
+      >
+        <textarea
+          {...register('pain_points')}
+          rows={3}
+          className={textareaClass}
+          placeholder="Problemas, frustrações e necessidades que movem a conversa."
+        />
+      </ProfileFormField>
+
+      <ProfileFormField
+        label="Objeções típicas"
+        error={errors.objections?.message}
+        suggestable
+        suggestLoading={suggestingField === 'objections'}
+        onSuggest={() => void suggestField('objections')}
+      >
+        <textarea
+          {...register('objections')}
+          rows={3}
+          className={textareaClass}
+          placeholder="Preço, timing, concorrente, risco, falta de prioridade..."
+        />
+      </ProfileFormField>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <ProfileFormField
+          label="Orçamento"
+          error={errors.budget_context?.message}
+          suggestable
+          suggestLoading={suggestingField === 'budget_context'}
+          onSuggest={() => void suggestField('budget_context')}
+        >
+          <textarea
+            {...register('budget_context')}
+            rows={3}
+            className={textareaClass}
+            placeholder="Verba disponível, restrições e flexibilidade."
+          />
+        </ProfileFormField>
+
+        <ProfileFormField
+          label="Autoridade de decisão"
+          error={errors.decision_authority?.message}
+          suggestable
+          suggestLoading={suggestingField === 'decision_authority'}
+          onSuggest={() => void suggestField('decision_authority')}
+        >
+          <textarea
+            {...register('decision_authority')}
+            rows={3}
+            className={textareaClass}
+            placeholder="Quem decide, quem influencia e qual processo interno existe."
+          />
+        </ProfileFormField>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <ProfileFormField
+          label="Traços de personalidade"
+          error={errors.personality_traits?.message}
+          suggestable
+          suggestLoading={suggestingField === 'personality_traits'}
+          onSuggest={() => void suggestField('personality_traits')}
+        >
+          <textarea
+            {...register('personality_traits')}
+            rows={3}
+            className={textareaClass}
+            placeholder="Cético, objetivo, colaborativo, analítico..."
+          />
+        </ProfileFormField>
+
+        <ProfileFormField label="Estilo de comunicação" error={errors.communication_style?.message}>
+          <select {...register('communication_style')} className={`${inputClass} bg-white`}>
+            <option value="">Selecione...</option>
+            <option value="Analitico">Analítico</option>
+            <option value="Dominante">Dominante</option>
+            <option value="Influente">Influente</option>
+            <option value="Integrador">Integrador</option>
+            <option value="Estavel">Estável</option>
+          </select>
+        </ProfileFormField>
+      </div>
+    </ProfileSectionCard>
+  )
+}
