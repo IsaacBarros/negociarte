@@ -84,12 +84,12 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
         {/* Nome */}
         <div className="space-y-1">
           <label className="text-sm font-medium">
-            Nome do cliente/caso <span className="text-red-500">*</span>
+            Nome <span className="text-red-500">*</span>
           </label>
           <input
             {...register('name')}
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-            placeholder="Ex: Pedro, comprador da rede Alfa"
+            placeholder="Ex: Pedro"
           />
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
@@ -100,7 +100,7 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
           <input
             {...register('description')}
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-            placeholder="Resumo livre para identificar o perfil rapidamente"
+            placeholder="Ex: Comprador da rede Alfa"
           />
         </div>
 
@@ -112,10 +112,10 @@ export function BuilderForm({ initialData, action, submitLabel = 'Salvar' }: Pro
             className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 bg-white"
           >
             <option value="">Selecione um estilo...</option>
-            <option value="Estilo 1">Estilo 1</option>
-            <option value="Estilo 2">Estilo 2</option>
-            <option value="Estilo 3">Estilo 3</option>
-            <option value="Estilo 4">Estilo 4</option>
+            <option value="Analitico">Analítico</option>
+            <option value="Dominante">Dominante</option>
+            <option value="Influente">Influente</option>
+            <option value="Integrador">Integrador</option>
           </select>
         </div>
 
