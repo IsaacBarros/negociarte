@@ -22,7 +22,12 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
       title="Cliente"
       description="Persona simulada: papel, dores, objeções, decisão e comportamento."
     >
-      <ProfileFormField label="Cliente do cenário" required error={errors.customer_id?.message}>
+      <ProfileFormField
+        label="Cliente do cenário"
+        required
+        description="Escolha o cliente criado anteriormente. O cenário usará essa persona como base."
+        error={errors.customer_id?.message}
+      >
         <select
           {...register('customer_id', { setValueAs: (value) => value || undefined })}
           className={`${inputClass} bg-white`}
@@ -44,11 +49,20 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
       </ProfileFormField>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <ProfileFormField label="Nome do cliente" required error={errors.name?.message}>
+        <ProfileFormField
+          label="Nome do cliente"
+          required
+          description="Nome visível do cliente simulado neste cenário."
+          error={errors.name?.message}
+        >
           <input {...register('name')} className={inputClass} placeholder="Ex: Pedro Almeida" />
         </ProfileFormField>
 
-        <ProfileFormField label="Cargo ou papel" error={errors.buyer_role?.message}>
+        <ProfileFormField
+          label="Cargo ou papel"
+          description="Função que orienta perguntas, autoridade e prioridades do cliente."
+          error={errors.buyer_role?.message}
+        >
           <input
             {...register('buyer_role')}
             className={inputClass}
@@ -57,7 +71,11 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
         </ProfileFormField>
       </div>
 
-      <ProfileFormField label="Descrição curta" error={errors.description?.message}>
+      <ProfileFormField
+        label="Descrição curta"
+        description="Resumo para reconhecer este cenário na lista."
+        error={errors.description?.message}
+      >
         <input
           {...register('description')}
           className={inputClass}
@@ -67,6 +85,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
 
       <ProfileFormField
         label="Dores do cliente"
+        description="Problemas que o vendedor precisa descobrir ou conectar à oferta."
         error={errors.pain_points?.message}
         suggestable
         suggestLoading={suggestingField === 'pain_points'}
@@ -82,6 +101,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
 
       <ProfileFormField
         label="Objeções típicas"
+        description="Resistências prováveis durante a conversa."
         error={errors.objections?.message}
         suggestable
         suggestLoading={suggestingField === 'objections'}
@@ -98,6 +118,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
       <div className="grid gap-5 md:grid-cols-2">
         <ProfileFormField
           label="Orçamento"
+          description="Limites de verba, flexibilidade e critérios financeiros."
           error={errors.budget_context?.message}
           suggestable
           suggestLoading={suggestingField === 'budget_context'}
@@ -113,6 +134,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
 
         <ProfileFormField
           label="Autoridade de decisão"
+          description="Quem decide, quem influencia e como a compra avança."
           error={errors.decision_authority?.message}
           suggestable
           suggestLoading={suggestingField === 'decision_authority'}
@@ -130,6 +152,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
       <div className="grid gap-5 md:grid-cols-2">
         <ProfileFormField
           label="Traços de personalidade"
+          description="Comportamento natural do cliente durante a simulação."
           error={errors.personality_traits?.message}
           suggestable
           suggestLoading={suggestingField === 'personality_traits'}
@@ -143,7 +166,11 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
           />
         </ProfileFormField>
 
-        <ProfileFormField label="Estilo de comunicação" error={errors.communication_style?.message}>
+        <ProfileFormField
+          label="Estilo de comunicação"
+          description="Como o cliente tende a falar, reagir e tomar decisões."
+          error={errors.communication_style?.message}
+        >
           <select {...register('communication_style')} className={`${inputClass} bg-white`}>
             <option value="">Selecione...</option>
             <option value="Analitico">Analítico</option>

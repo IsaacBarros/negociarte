@@ -6,15 +6,22 @@ import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { CreateSessionSchema, UpdateSessionStatusSchema } from '@/lib/schemas/session'
 
-export async function createSession(rawInput: unknown) {
+export async function createSession(rawInput: unknown, formData?: FormData) {
   const user = await requireAuth()
-  const { customer_profile_id } = CreateSessionSchema.parse(rawInput)
+  const mergedInput =
+    formData && formData.get('difficulty_level')
+      ? {
+          ...(rawInput as Record<string, unknown>),
+          difficulty_level: formData.get('difficulty_level'),
+        }
+      : rawInput
+  const { customer_profile_id, difficulty_level } = CreateSessionSchema.parse(mergedInput)
 
   const supabase = await createClient()
 
   const { data: profileRaw, error: profileError } = await supabase
     .from('customer_profiles')
-    .select('id, name')
+    .select('id, name, difficulty_level')
     .eq('id', customer_profile_id)
     .eq('organization_id', user.organization_id)
     .eq('is_active', true)
@@ -24,7 +31,13 @@ export async function createSession(rawInput: unknown) {
     throw new Error('Perfil não encontrado ou inativo.')
   }
 
-  const profile = profileRaw as { id: string; name: string }
+  const profile = profileRaw as {
+    id: string
+    name: string
+    difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
+  }
+  const sessionDifficulty =
+    profile.difficulty_level === 'trainee_choice' ? difficulty_level ?? 'medium' : null
 
   const { data: behaviorStylesRaw } = await supabase
     .from('behavior_styles')
@@ -46,6 +59,7 @@ export async function createSession(rawInput: unknown) {
       organization_id: user.organization_id,
       title: `Treino com ${profile.name}`,
       behavior_style_id: randomBehaviorStyle?.id ?? null,
+      difficulty_level: sessionDifficulty,
     })
     .select('id')
     .single()

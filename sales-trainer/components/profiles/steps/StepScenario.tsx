@@ -22,7 +22,11 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
         description="O cenário junta a empresa e o cliente em uma visita comercial treinável."
       >
         <div className="grid gap-5 md:grid-cols-2">
-          <ProfileFormField label="Tipo de cenário" error={errors.scenario_type?.message}>
+          <ProfileFormField
+            label="Tipo de cenário"
+            description="Define o foco principal da conversa de treino."
+            error={errors.scenario_type?.message}
+          >
             <select {...register('scenario_type')} className={`${inputClass} bg-white`}>
               <option value="">Selecione...</option>
               <option value="discovery">Descoberta</option>
@@ -31,7 +35,11 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
             </select>
           </ProfileFormField>
 
-          <ProfileFormField label="Dificuldade" error={errors.difficulty_level?.message}>
+          <ProfileFormField
+            label="Dificuldade"
+            description="Ajusta resistência inicial, nível de objeção e rigor da conversa."
+            error={errors.difficulty_level?.message}
+          >
             <select
               {...register('difficulty_level', { setValueAs: (value) => value || undefined })}
               className={`${inputClass} bg-white`}
@@ -40,12 +48,14 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
               <option value="easy">Fácil</option>
               <option value="medium">Médio</option>
               <option value="hard">Difícil</option>
+              <option value="trainee_choice">Escolha do cliente</option>
             </select>
           </ProfileFormField>
         </div>
 
         <ProfileFormField
           label="Briefing visível ao vendedor"
+          description="Informação que o participante verá antes de iniciar a visita."
           error={errors.visible_briefing?.message}
           suggestable
           suggestLoading={suggestingField === 'visible_briefing'}
@@ -61,6 +71,7 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
 
         <ProfileFormField
           label="Objetivo da visita"
+          description="Resultado esperado para considerar a visita bem conduzida."
           error={errors.visit_objective?.message}
           suggestable
           suggestLoading={suggestingField === 'visit_objective'}
@@ -76,6 +87,7 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
 
         <ProfileFormField
           label="Critérios de sucesso"
+          description="O que será observado para avaliar a qualidade da condução."
           error={errors.success_criteria?.message}
           suggestable
           suggestLoading={suggestingField === 'success_criteria'}
@@ -101,6 +113,7 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
 
         <ProfileFormField
           label="Contexto confidencial"
+          description="Informação oculta usada pelo avatar. Não aparece para o vendedor."
           error={errors.confidential_context?.message}
           suggestable
           suggestLoading={suggestingField === 'confidential_context'}
@@ -116,6 +129,7 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
 
         <ProfileFormField
           label="Processo de vendas esperado"
+          description="Etapas e comportamentos que a simulação deve valorizar."
           error={errors.sales_process_context?.message}
           suggestable
           suggestLoading={suggestingField === 'sales_process_context'}
@@ -131,6 +145,7 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
 
         <ProfileFormField
           label="Competências avaliadas"
+          description="Habilidades que devem ser consideradas na avaliação final."
           error={errors.sales_competencies_context?.message}
           suggestable
           suggestLoading={suggestingField === 'sales_competencies_context'}

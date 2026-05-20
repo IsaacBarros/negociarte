@@ -84,7 +84,7 @@ export type Database = {
           competition_context: string | null
           marketing_strategy: string | null
           scenario_type: string | null
-          difficulty_level: 'easy' | 'medium' | 'hard' | null
+          difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           system_prompt: string
           is_active: boolean
           created_at: string
@@ -118,7 +118,7 @@ export type Database = {
           competition_context?: string | null
           marketing_strategy?: string | null
           scenario_type?: string | null
-          difficulty_level?: 'easy' | 'medium' | 'hard' | null
+          difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           system_prompt: string
           is_active?: boolean
           created_at?: string
@@ -152,7 +152,7 @@ export type Database = {
           competition_context?: string | null
           marketing_strategy?: string | null
           scenario_type?: string | null
-          difficulty_level?: 'easy' | 'medium' | 'hard' | null
+          difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           system_prompt?: string
           is_active?: boolean
           created_at?: string
@@ -169,6 +169,7 @@ export type Database = {
           description: string | null
           industry: string | null
           company_size: string | null
+          products_services: Json
           product_context: string | null
           market_situation: string | null
           competition_context: string | null
@@ -185,6 +186,7 @@ export type Database = {
           description?: string | null
           industry?: string | null
           company_size?: string | null
+          products_services?: Json
           product_context?: string | null
           market_situation?: string | null
           competition_context?: string | null
@@ -201,6 +203,7 @@ export type Database = {
           description?: string | null
           industry?: string | null
           company_size?: string | null
+          products_services?: Json
           product_context?: string | null
           market_situation?: string | null
           competition_context?: string | null
@@ -317,6 +320,7 @@ export type Database = {
           total_tokens: number
           behavior_style_id: string | null
           outcome: 'accepted' | 'rejected' | 'ended_by_errors' | null
+          difficulty_level: 'easy' | 'medium' | 'hard' | null
         }
         Insert: {
           id?: string
@@ -330,6 +334,7 @@ export type Database = {
           total_tokens?: number
           behavior_style_id?: string | null
           outcome?: 'accepted' | 'rejected' | 'ended_by_errors' | null
+          difficulty_level?: 'easy' | 'medium' | 'hard' | null
         }
         Update: {
           id?: string
@@ -343,6 +348,7 @@ export type Database = {
           total_tokens?: number
           behavior_style_id?: string | null
           outcome?: 'accepted' | 'rejected' | 'ended_by_errors' | null
+          difficulty_level?: 'easy' | 'medium' | 'hard' | null
         }
         Relationships: []
       }

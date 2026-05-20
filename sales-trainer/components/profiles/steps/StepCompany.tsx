@@ -22,7 +22,12 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
       title="Empresa"
       description="Contexto da empresa, oferta e ambiente competitivo usados no cenário."
     >
-      <ProfileFormField label="Empresa do cenário" required error={errors.company_id?.message}>
+      <ProfileFormField
+        label="Empresa do cenário"
+        required
+        description="Escolha a empresa criada anteriormente. O cenário usará esse contexto como base."
+        error={errors.company_id?.message}
+      >
         <select
           {...register('company_id', { setValueAs: (value) => value || undefined })}
           className={`${inputClass} bg-white`}
@@ -43,7 +48,11 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
       </ProfileFormField>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <ProfileFormField label="Segmento" error={errors.industry?.message}>
+        <ProfileFormField
+          label="Segmento"
+          description="Área de atuação da empresa usada na simulação."
+          error={errors.industry?.message}
+        >
           <input
             {...register('industry')}
             className={inputClass}
@@ -51,7 +60,11 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
           />
         </ProfileFormField>
 
-        <ProfileFormField label="Porte da empresa" error={errors.company_size?.message}>
+        <ProfileFormField
+          label="Porte da empresa"
+          description="Tamanho e abrangência da operação."
+          error={errors.company_size?.message}
+        >
           <input
             {...register('company_size')}
             className={inputClass}
@@ -62,6 +75,7 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
 
       <ProfileFormField
         label="Produto ou serviço"
+        description="Oferta principal que o vendedor levará para a conversa."
         error={errors.product_context?.message}
         suggestable
         suggestLoading={suggestingField === 'product_context'}
@@ -77,6 +91,7 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
 
       <ProfileFormField
         label="Situação de mercado"
+        description="Condições externas que influenciam a negociação."
         error={errors.market_situation?.message}
         suggestable
         suggestLoading={suggestingField === 'market_situation'}
@@ -92,6 +107,7 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
 
       <ProfileFormField
         label="Concorrência"
+        description="Alternativas e pressões competitivas que o cliente pode citar."
         error={errors.competition_context?.message}
         suggestable
         suggestLoading={suggestingField === 'competition_context'}
@@ -107,6 +123,7 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
 
       <ProfileFormField
         label="Estratégia comercial e marketing"
+        description="Posicionamento e argumentos que a empresa quer testar no treino."
         error={errors.marketing_strategy?.message}
         suggestable
         suggestLoading={suggestingField === 'marketing_strategy'}

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
   const { data: sessionRaw, error: sessionError } = await supabase
     .from('training_sessions')
-    .select('id, seller_id, status, customer_profile_id, behavior_style_id')
+    .select('id, seller_id, status, customer_profile_id, behavior_style_id, difficulty_level')
     .eq('id', session_id)
     .eq('seller_id', user.id)
     .eq('status', 'active')
@@ -70,6 +70,7 @@ export async function POST(request: Request) {
     id: string
     customer_profile_id: string
     behavior_style_id: string | null
+    difficulty_level: 'easy' | 'medium' | 'hard' | null
   }
 
   const { data: profileRaw } = await supabase
@@ -115,6 +116,15 @@ export async function POST(request: Request) {
     }
   }
 
+  const difficultyLabels: Record<string, string> = {
+    easy: 'Fácil — comprador mais receptivo, poucas objeções',
+    medium: 'Médio — objeções moderadas, cético mas aberto',
+    hard: 'Difícil — muito cético, exige argumentação sólida',
+  }
+  const difficultyPrompt = session.difficulty_level
+    ? `\n\n== DIFICULDADE ESCOLHIDA PELO PARTICIPANTE ==\nNivel de dificuldade inicial: ${difficultyLabels[session.difficulty_level]}. Ajuste dinamicamente conforme a aderencia do vendedor.`
+    : ''
+
   const lastUserMessage = uiMessages.at(-1)
   const lastUserMessageText =
     lastUserMessage?.role === 'user' ? textFromMessage(lastUserMessage) : ''
@@ -131,7 +141,7 @@ export async function POST(request: Request) {
 
   const streamResult = streamText({
     model: openrouter(model),
-    system: `${systemPrompt}${behaviorPrompt}`,
+    system: `${systemPrompt}${behaviorPrompt}${difficultyPrompt}`,
     messages: modelMessages,
     maxOutputTokens: 1000,
     onFinish: async ({ text, usage }) => {

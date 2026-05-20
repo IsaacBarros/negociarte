@@ -5,6 +5,7 @@ import { SuggestButton } from '@/components/profiles/SuggestButton'
 
 interface Props {
   label: string
+  description?: string
   error?: string
   required?: boolean
   suggestable?: boolean
@@ -17,6 +18,7 @@ interface Props {
 
 export function ProfileFormField({
   label,
+  description,
   error,
   required,
   suggestable,
@@ -53,6 +55,7 @@ export function ProfileFormField({
           {suggestable && onSuggest && <SuggestButton loading={suggestLoading} onClick={onSuggest} />}
         </div>
       </div>
+      {description && <p className="text-xs leading-relaxed text-neutral-500">{description}</p>}
       {children}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>

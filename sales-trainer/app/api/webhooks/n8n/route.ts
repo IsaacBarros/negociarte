@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   const { data: session, error: sessionError } = await adminClient
     .from('training_sessions')
-    .select('id, seller_id, organization_id, status, total_tokens, customer_profile_id, behavior_style_id, outcome')
+    .select('id, seller_id, organization_id, status, total_tokens, customer_profile_id, behavior_style_id, outcome, difficulty_level')
     .eq('id', session_id)
     .eq('status', 'completed')
     .single()
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
         total_tokens: session.total_tokens,
         behavior_style_id: session.behavior_style_id,
         outcome: session.outcome,
+        difficulty_level: session.difficulty_level,
         customer_profiles: profile,
         behavior_styles: behaviorStyle,
       },

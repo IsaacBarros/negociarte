@@ -12,6 +12,24 @@ function toNullable<T>(v: T | undefined): T | null {
   return v === '' ? null : v ?? null
 }
 
+function productsToContext(products: unknown): string | null {
+  if (!Array.isArray(products)) return null
+
+  const lines = products
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const product = item as { name?: unknown; description?: unknown }
+      const name = typeof product.name === 'string' ? product.name.trim() : ''
+      const description =
+        typeof product.description === 'string' ? product.description.trim() : ''
+      if (!name && !description) return null
+      return [name, description].filter(Boolean).join(': ')
+    })
+    .filter(Boolean)
+
+  return lines.length ? lines.join('\n') : null
+}
+
 async function selectedEntityContext(
   supabase: Awaited<ReturnType<typeof createClient>>,
   organizationId: string,
@@ -69,7 +87,11 @@ export async function createProfile(rawInput: unknown) {
     decision_authority: toNullable(input.decision_authority) ?? customer?.decision_authority ?? null,
     personality_traits: toNullable(input.personality_traits) ?? customer?.personality_traits ?? null,
     communication_style: toNullable(input.communication_style) ?? customer?.communication_style ?? null,
-    product_context: toNullable(input.product_context) ?? company?.product_context ?? null,
+    product_context:
+      toNullable(input.product_context) ??
+      company?.product_context ??
+      productsToContext(company?.products_services) ??
+      null,
     visible_briefing: toNullable(input.visible_briefing),
     visit_objective: toNullable(input.visit_objective),
     success_criteria: toNullable(input.success_criteria),
@@ -138,7 +160,11 @@ export async function updateProfile(id: string, rawInput: unknown) {
     decision_authority: toNullable(input.decision_authority) ?? customer?.decision_authority ?? null,
     personality_traits: toNullable(input.personality_traits) ?? customer?.personality_traits ?? null,
     communication_style: toNullable(input.communication_style) ?? customer?.communication_style ?? null,
-    product_context: toNullable(input.product_context) ?? company?.product_context ?? null,
+    product_context:
+      toNullable(input.product_context) ??
+      company?.product_context ??
+      productsToContext(company?.products_services) ??
+      null,
     visible_briefing: toNullable(input.visible_briefing),
     visit_objective: toNullable(input.visit_objective),
     success_criteria: toNullable(input.success_criteria),

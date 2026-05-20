@@ -25,7 +25,7 @@ export const CustomerProfileSchema = z.object({
   competition_context: z.string().max(2000).optional(),
   marketing_strategy: z.string().max(2000).optional(),
   scenario_type: z.string().max(100).optional(),
-  difficulty_level: z.enum(['easy', 'medium', 'hard']).optional(),
+  difficulty_level: z.enum(['easy', 'medium', 'hard', 'trainee_choice']).optional(),
   is_active: z.boolean().optional(),
 })
 

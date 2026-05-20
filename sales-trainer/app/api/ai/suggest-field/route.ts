@@ -19,6 +19,7 @@ const fieldLabels: Record<string, string> = {
   personality_traits: 'traços de personalidade do comprador',
   communication_style: 'estilo de comunicação do comprador',
   product_context: 'produto ou serviço vendido no cenário',
+  product_service_description: 'descrição de produto ou serviço da empresa',
   budget_context: 'contexto de orçamento do comprador',
   decision_authority: 'autoridade e processo de decisão do comprador',
   visible_briefing: 'briefing visível ao participante antes da visita',

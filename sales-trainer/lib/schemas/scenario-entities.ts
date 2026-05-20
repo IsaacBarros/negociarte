@@ -7,6 +7,14 @@ export const ScenarioCompanySchema = z.object({
   description: optionalText(500),
   industry: optionalText(200),
   company_size: optionalText(200),
+  products_services: z
+    .array(
+      z.object({
+        name: z.string().max(120),
+        description: z.string().max(1000),
+      }),
+    )
+    .optional(),
   product_context: optionalText(1000),
   market_situation: optionalText(2000),
   competition_context: optionalText(2000),

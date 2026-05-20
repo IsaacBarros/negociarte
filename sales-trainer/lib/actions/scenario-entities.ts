@@ -26,6 +26,7 @@ export async function createScenarioCompany(rawInput: unknown) {
     description: toNullable(input.description),
     industry: toNullable(input.industry),
     company_size: toNullable(input.company_size),
+    products_services: input.products_services ?? [],
     product_context: toNullable(input.product_context),
     market_situation: toNullable(input.market_situation),
     competition_context: toNullable(input.competition_context),
