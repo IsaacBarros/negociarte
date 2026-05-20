@@ -35,7 +35,7 @@ export default async function AdminSessionsPage({
     .limit(50)
 
   if (seller) sessionsQuery = sessionsQuery.eq('seller_id', seller)
-  if (status) sessionsQuery = sessionsQuery.eq('status', status)
+  if (status) sessionsQuery = sessionsQuery.eq('status', status as 'active' | 'completed' | 'abandoned')
 
   const { data: sessionsRaw } = await sessionsQuery
 
@@ -51,8 +51,8 @@ export default async function AdminSessionsPage({
   }[]
 
   // Busca perfis de vendedores e clientes em batch
-  const sellerIds = [...new Set(sessions.map((s) => s.seller_id))]
   const profileIds = [...new Set(sessions.map((s) => s.customer_profile_id))]
+
 
   const [{ data: sellersData }, { data: profilesData }, { data: feedbackData }] =
     await Promise.all([

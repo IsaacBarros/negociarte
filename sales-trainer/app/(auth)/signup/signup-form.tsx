@@ -83,7 +83,7 @@ export function SignupForm() {
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" suppressHydrationWarning>
         <label htmlFor="email" className="text-sm font-medium">
           E-mail
         </label>
@@ -96,10 +96,11 @@ export function SignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
           placeholder="voce@empresa.com"
+          suppressHydrationWarning
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" suppressHydrationWarning>
         <label htmlFor="password" className="text-sm font-medium">
           Senha
         </label>
@@ -113,6 +114,7 @@ export function SignupForm() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
           placeholder="Mínimo 8 caracteres"
+          suppressHydrationWarning
         />
       </div>
 

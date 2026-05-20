@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 import { evaluateSession } from '@/lib/ai/evaluator'
 import { z } from 'zod'
+import type { Database } from '@/types/database'
 
 const WebhookSchema = z.object({
   event: z.literal('session.completed'),
@@ -10,7 +10,7 @@ const WebhookSchema = z.object({
 })
 
 function createAdminClient() {
-  return createSupabaseAdmin(
+  return createSupabaseAdmin<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
@@ -35,30 +35,19 @@ export async function POST(request: Request) {
 
   const { session_id } = result.data
 
-  const { data: sessionRaw, error: sessionError } = await (adminClient as any)
+  const { data: session, error: sessionError } = await adminClient
     .from('training_sessions')
     .select('id, seller_id, organization_id, status, total_tokens, customer_profile_id, behavior_style_id, outcome')
     .eq('id', session_id)
     .eq('status', 'completed')
     .single()
 
-  if (sessionError || !sessionRaw) {
+  if (sessionError || !session) {
     return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 })
   }
 
-  const session = sessionRaw as {
-    id: string
-    seller_id: string
-    organization_id: string
-    status: string
-    total_tokens: number
-    customer_profile_id: string
-    behavior_style_id: string | null
-    outcome: 'accepted' | 'rejected' | 'ended_by_errors' | null
-  }
-
   // Busca dados do perfil
-  const { data: profileRaw } = await (adminClient as any)
+  const { data: profile } = await adminClient
     .from('customer_profiles')
     .select(
       'name, difficulty_level, scenario_type, visit_objective, success_criteria, sales_process_context, sales_competencies_context',
@@ -66,31 +55,15 @@ export async function POST(request: Request) {
     .eq('id', session.customer_profile_id)
     .single()
 
-  const profile = profileRaw as {
-    name: string
-    difficulty_level: string | null
-    scenario_type: string | null
-    visit_objective: string | null
-    success_criteria: string | null
-    sales_process_context: string | null
-    sales_competencies_context: string | null
-  } | null
-
-  const { data: behaviorStyleRaw } = session.behavior_style_id
-    ? await (adminClient as any)
+  const { data: behaviorStyle } = session.behavior_style_id
+    ? await adminClient
         .from('behavior_styles')
         .select('name, description, evaluation_criteria')
         .eq('id', session.behavior_style_id)
         .single()
     : { data: null }
 
-  const behaviorStyle = behaviorStyleRaw as {
-    name: string
-    description: string
-    evaluation_criteria: string | null
-  } | null
-
-  const { data: messages } = await (adminClient as any)
+  const { data: messages } = await adminClient
     .from('messages')
     .select('role, content')
     .eq('session_id', session_id)
@@ -103,11 +76,11 @@ export async function POST(request: Request) {
   try {
     const evaluation = await evaluateSession({
       session: {
-        ...session,
+        id: session.id,
         customer_profile_id: session.customer_profile_id,
         seller_id: session.seller_id,
         organization_id: session.organization_id,
-        title: null,
+        title: `Treino`,
         status: 'completed',
         started_at: '',
         ended_at: null,
@@ -122,7 +95,7 @@ export async function POST(request: Request) {
 
     const model = process.env.OPENROUTER_EVAL_MODEL ?? 'openai/gpt-4o-mini'
 
-    const { error: feedbackError } = await (adminClient as any)
+    const { error: feedbackError } = await adminClient
       .from('session_feedback')
       .upsert({
         session_id,

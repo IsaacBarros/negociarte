@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { CustomerProfileSchema } from '@/lib/schemas/profile'
 import { compileSystemPrompt } from '@/lib/ai/profile-compiler'
+import type { Database } from '@/types/database'
 
 function toNullable<T>(v: T | undefined): T | null {
   return v ?? null
@@ -15,7 +16,7 @@ export async function createProfile(rawInput: unknown) {
   const user = await requireAdmin()
   const input = CustomerProfileSchema.parse(rawInput)
 
-  const dbData = {
+  const dbData: Database['public']['Tables']['customer_profiles']['Insert'] = {
     organization_id: user.organization_id,
     created_by: user.id,
     name: input.name,
@@ -45,13 +46,13 @@ export async function createProfile(rawInput: unknown) {
     system_prompt: '',
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dbData.system_prompt = compileSystemPrompt(dbData as any)
+  dbData.system_prompt = compileSystemPrompt(dbData)
 
   const supabase = await createClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('customer_profiles').insert(dbData as any) as any)
+  const { data, error } = await supabase
+    .from('customer_profiles')
+    .insert(dbData)
     .select('id')
     .single()
 
@@ -105,18 +106,16 @@ export async function updateProfile(id: string, rawInput: unknown) {
     is_active: input.is_active ?? true,
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const merged = { ...(existing as any), ...updateData }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const system_prompt = compileSystemPrompt(merged as any)
+  const merged = { ...existing, ...updateData }
+  const system_prompt = compileSystemPrompt(merged)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('customer_profiles') as any)
+  const { error } = await supabase
+    .from('customer_profiles')
     .update({ ...updateData, system_prompt })
     .eq('id', id)
     .eq('organization_id', user.organization_id)
 
-  if (error) throw new Error((error as { message: string }).message)
+  if (error) throw new Error(error.message)
 
   revalidatePath('/admin/profiles')
   revalidatePath(`/admin/profiles/${id}`)
@@ -126,10 +125,12 @@ export async function toggleProfileActive(id: string, isActive: boolean) {
   await requireAdmin()
 
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('customer_profiles') as any).update({ is_active: isActive }).eq('id', id)
+  const { error } = await supabase
+    .from('customer_profiles')
+    .update({ is_active: isActive })
+    .eq('id', id)
 
-  if (error) throw new Error((error as { message: string }).message)
+  if (error) throw new Error(error.message)
 
   revalidatePath('/admin/profiles')
 }

@@ -6,8 +6,6 @@ import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { CreateSessionSchema, UpdateSessionStatusSchema } from '@/lib/schemas/session'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export async function createSession(rawInput: unknown) {
   const user = await requireAuth()
   const { customer_profile_id } = CreateSessionSchema.parse(rawInput)
@@ -40,15 +38,15 @@ export async function createSession(rawInput: unknown) {
       ? behaviorStyles[Math.floor(Math.random() * behaviorStyles.length)]
       : null
 
-  const { data: sessionRaw, error } = await (
-    supabase.from('training_sessions').insert({
+  const { data: sessionRaw, error } = await supabase
+    .from('training_sessions')
+    .insert({
       customer_profile_id,
       seller_id: user.id,
       organization_id: user.organization_id,
       title: `Treino com ${profile.name}`,
       behavior_style_id: randomBehaviorStyle?.id ?? null,
-    } as any) as any
-  )
+    })
     .select('id')
     .single()
 
@@ -64,8 +62,8 @@ export async function endSession(rawInput: unknown) {
 
   const supabase = await createClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('training_sessions') as any)
+  const { error } = await supabase
+    .from('training_sessions')
     .update({ status, ended_at: new Date().toISOString() })
     .eq('id', session_id)
     .eq('seller_id', user.id)

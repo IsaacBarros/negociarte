@@ -38,6 +38,16 @@ Problemas novos registrados: `tsc --noEmit` e `eslint` ficaram presos sem saída
 
 ---
 
+## 2026-05-20 — Resolução de Typescript & ESLint (Remoção de 'any')
+
+**Categoria:** Bug | Arquitetura
+
+O uso de `as any` no cliente do Supabase existia devido a uma incompatibilidade entre a versão do `@supabase/supabase-js` (que exige a propriedade `Relationships` em `GenericTable`) e o esquema gerado por versões mais antigas do Supabase CLI (que não geravam a propriedade `Relationships`).
+Isso fazia com que o TypeScript inferisse os métodos de tabela como `never`, forçando os desenvolvedores anteriores a usar castings e silenciar o linter.
+Injetar `Relationships: []` no tipo gerado em `types/database.ts` resolveu a raiz do problema, permitindo a remoção completa de `as any` em todas as actions (`profiles.ts`, `sessions.ts`, `route.ts` de webhook do n8n) com tipagem 100% segura e passando no compile production (`next build`) sem desrespeitar o linter.
+
+Também adicionamos o diretório `.next-dev/**` aos ignores do ESLint (`eslint.config.mjs`) para evitar que arquivos temporários gerados em desenvolvimento poluam o output do linter.
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

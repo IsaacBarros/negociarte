@@ -23,6 +23,7 @@ export type Database = {
           name?: string
           created_at?: string
         }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -52,6 +53,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       customer_profiles: {
         Row: {
@@ -150,6 +152,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       behavior_styles: {
         Row: {
@@ -185,6 +188,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       training_sessions: {
         Row: {
@@ -226,6 +230,7 @@ export type Database = {
           behavior_style_id?: string | null
           outcome?: 'accepted' | 'rejected' | 'ended_by_errors' | null
         }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -255,6 +260,7 @@ export type Database = {
           model_used?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       session_feedback: {
         Row: {
@@ -296,6 +302,7 @@ export type Database = {
           generated_by?: string
           created_at?: string
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>

@@ -1,0 +1,14 @@
+{
+  "name": "negociarte-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd sales-trainer && pnpm dev",
+    "build": "cd sales-trainer && pnpm build",
+    "start": "cd sales-trainer && pnpm start",
+    "lint": "cd sales-trainer && pnpm lint",
+    "typecheck": "cd sales-trainer && pnpm typecheck",
+    "test": "cd sales-trainer && pnpm test",
+    "test:e2e": "cd sales-trainer && pnpm test:e2e"
+  }
+}

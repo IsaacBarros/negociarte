@@ -22,8 +22,6 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
 
   if (!profileRaw) notFound()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profile = profileRaw as any
   const action = updateProfile.bind(null, id)
 
   return (
@@ -32,9 +30,9 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
         <Link href="/admin/profiles" className="text-sm text-neutral-500 hover:text-neutral-900">
           ← Perfis
         </Link>
-        <h1 className="text-xl font-semibold">Editar: {profile.name as string}</h1>
+        <h1 className="text-xl font-semibold">Editar: {profileRaw.name}</h1>
       </div>
-      <BuilderForm initialData={profile} action={action} submitLabel="Salvar alterações" />
+      <BuilderForm initialData={profileRaw} action={action} submitLabel="Salvar alterações" />
     </div>
   )
 }

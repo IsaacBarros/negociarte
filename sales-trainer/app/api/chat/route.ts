@@ -120,8 +120,7 @@ export async function POST(request: Request) {
     lastUserMessage?.role === 'user' ? textFromMessage(lastUserMessage) : ''
 
   if (lastUserMessageText) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('messages') as any).insert({
+    await supabase.from('messages').insert({
       session_id,
       role: 'user',
       content: lastUserMessageText,
@@ -136,19 +135,17 @@ export async function POST(request: Request) {
     messages: modelMessages,
     maxOutputTokens: 1000,
     onFinish: async ({ text, usage }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await Promise.all([
-        (supabase.from('messages') as any).insert({
+        supabase.from('messages').insert({
           session_id,
           role: 'assistant',
           content: text,
           tokens: usage.outputTokens,
           model_used: model,
         }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase.rpc as any)('increment_session_tokens', {
+        supabase.rpc('increment_session_tokens', {
           p_session_id: session_id,
-          p_tokens: usage.totalTokens ?? usage.outputTokens,
+          p_tokens: usage.totalTokens ?? usage.outputTokens ?? 0,
         }),
       ])
     },

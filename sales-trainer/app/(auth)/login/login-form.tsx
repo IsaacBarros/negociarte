@@ -39,7 +39,7 @@ export function LoginForm() {
         <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
       )}
 
-      <div className="space-y-1">
+      <div className="space-y-1" suppressHydrationWarning>
         <label htmlFor="email" className="text-sm font-medium">
           E-mail
         </label>
@@ -52,10 +52,11 @@ export function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
           placeholder="voce@empresa.com"
+          suppressHydrationWarning
         />
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1" suppressHydrationWarning>
         <label htmlFor="password" className="text-sm font-medium">
           Senha
         </label>
@@ -67,6 +68,7 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+          suppressHydrationWarning
         />
       </div>
 
