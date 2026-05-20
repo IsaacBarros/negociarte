@@ -3,27 +3,11 @@ import { z } from 'zod'
 export const CustomerProfileSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório').max(100),
   description: z.string().max(500).optional(),
-  buyer_role: z.string().max(100).optional(),
-  industry: z.string().max(100).optional(),
-  company_size: z.string().max(100).optional(),
-  pain_points: z.string().max(2000).optional(),
-  objections: z.string().max(2000).optional(),
-  budget_context: z.string().max(500).optional(),
-  decision_authority: z.string().max(500).optional(),
-  personality_traits: z.string().max(500).optional(),
-  communication_style: z.string().max(500).optional(),
-  product_context: z.string().max(1000).optional(),
-  visible_briefing: z.string().max(2000).optional(),
-  visit_objective: z.string().max(1000).optional(),
-  success_criteria: z.string().max(1500).optional(),
-  confidential_context: z.string().max(4000).optional(),
-  sales_process_context: z.string().max(4000).optional(),
-  sales_competencies_context: z.string().max(4000).optional(),
-  market_situation: z.string().max(2000).optional(),
-  competition_context: z.string().max(2000).optional(),
-  marketing_strategy: z.string().max(2000).optional(),
-  scenario_type: z.enum(['discovery', 'objection_handling', 'closing']).optional(),
-  difficulty_level: z.enum(['easy', 'medium', 'hard']).optional(),
+  communication_style: z.string().max(500).optional(), // Estilo de Comportamento
+  visible_briefing: z.string().max(2000).optional(), // Contexto de Compra
+  budget_context: z.string().max(500).optional(), // Valor Disponível
+  objections: z.string().max(2000).optional(), // Objeções Típicas
+  visit_objective: z.string().max(1000).optional(), // Objetivo da Visita
   is_active: z.boolean().optional(),
 })
 
