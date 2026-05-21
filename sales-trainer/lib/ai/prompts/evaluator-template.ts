@@ -41,37 +41,66 @@ export function buildEvaluatorPrompt(ctx: EvaluationContext): string {
     ? `Dificuldade: ${difficultyLevel === 'easy' ? 'Fácil' : difficultyLevel === 'medium' ? 'Médio' : 'Difícil'}.`
     : ''
 
-  return `Você é um coach de vendas especializado. Avalie a performance do vendedor na seguinte conversa de treino.
+  return `Você é um coach de vendas especializado da Negociarte. Avalie a performance do vendedor na conversa de treino abaixo seguindo o processo de vendas estruturado em 6 etapas.
 
 PERFIL DO CLIENTE SIMULADO: ${profileName}
 ${scenarioContext}
 ${difficultyContext}
 ${visitObjective ? `Objetivo da visita: ${visitObjective}.` : ''}
 ${successCriteria ? `Critérios de sucesso: ${successCriteria}.` : ''}
-${behaviorStyleName ? `Estilo comportamental sorteado: ${behaviorStyleName}.` : ''}
+${behaviorStyleName ? `Estilo comportamental do cliente: ${behaviorStyleName}.` : ''}
 ${behaviorStyleDescription ? `Descrição do estilo: ${behaviorStyleDescription}.` : ''}
 ${behaviorEvaluationCriteria ? `Critérios de adequação ao estilo: ${behaviorEvaluationCriteria}.` : ''}
 ${salesProcessContext ? `Processo de vendas esperado: ${salesProcessContext}.` : ''}
-${salesCompetenciesContext ? `Competências de vendas avaliadas: ${salesCompetenciesContext}.` : ''}
+${salesCompetenciesContext ? `Competências esperadas: ${salesCompetenciesContext}.` : ''}
 
 TRANSCRIÇÃO:
 ${transcript}
 
-CRITÉRIOS DE AVALIAÇÃO:
-1. Resultado da visita — o vendedor chegou ao objetivo proposto? O cliente aceitaria, avançaria ou recusaria?
-2. Adequação ao estilo comportamental — o vendedor percebeu e adaptou a abordagem ao estilo do cliente?
-3. Aderência ao processo de vendas — seguiu as etapas esperadas sem pular diagnóstico, proposta de valor ou próximos passos?
-4. Aderência às competências de vendas — demonstrou as competências avaliadas com evidências na conversa?
-5. Descoberta e escuta ativa — identificou dores, contexto, autoridade, orçamento e critérios de decisão?
-6. Tratamento de objeções — respondeu objeções com empatia, dados e conexão com valor?
-7. Condução — manteve foco, ritmo e avanço natural para a decisão ou próximo passo?
+PROCESSO DE AVALIAÇÃO — 6 etapas, score de 1 a 5 por comportamento:
 
-Responda APENAS com um JSON válido neste formato exato:
-{
-  "overall_score": <número de 1 a 10>,
-  "strengths": "<texto descrevendo 2-3 pontos fortes, citando evidências da conversa>",
-  "improvements": "<texto descrevendo 2-3 melhorias ligadas a estilo comportamental, processo e competências>",
-  "techniques_used": ["<técnica 1>", "<técnica 2>"],
-  "techniques_missed": ["<técnica que deveria ter sido usada>"]
-}`
+1. PLANEJAMENTO
+   - preparacao_apresentacao (peso 20pts): Estava preparado para a apresentação — conhecimento do cliente e do produto.
+     Score 5 = demonstrou conhecimento completo; 3 = preparação parcial; 1 = chegou sem preparo evidente.
+   - estrategia_abordagem (peso 10pts): Seguiu uma estratégia de abordagem com foco no cliente e no resultado desejado.
+     Score 5 = abordagem estruturada e orientada ao cliente; 3 = estratégia parcial; 1 = abordagem sem estratégia perceptível.
+
+2. ABERTURA
+   - proposito_visita (peso 10pts): Falou o propósito da visita ao abrir o contato.
+     Score 5 = deixou claro o objetivo logo no início; 3 = mencionou parcialmente; 1 = não comunicou o propósito.
+   - adaptacao_estilo (peso 20pts): Adaptou-se ao estilo comportamental do cliente.
+     Score 5 = percebeu e adaptou tom e abordagem ao estilo; 3 = adaptação parcial; 1 = ignorou completamente o estilo.
+
+3. ENTENDIMENTO DAS NECESSIDADES
+   - perguntas_diagnostico (peso 20pts): Fez perguntas para entender as necessidades do cliente.
+     Score 5 = perguntas relevantes que revelaram necessidades reais; 3 = algumas perguntas úteis; 1 = não fez perguntas de diagnóstico.
+   - escuta_ativa (peso 20pts): Praticou a escuta ativa — ouviu, validou entendimento, não interrompeu.
+     Score 5 = escuta consistente e validação clara; 3 = escuta parcial; 1 = ignorou respostas do cliente.
+
+4. ARGUMENTAÇÃO
+   - solucoes_necessidades (peso 20pts): Propôs soluções relacionadas às necessidades identificadas.
+     Score 5 = proposta alinhada às necessidades expressas; 3 = conexão parcial; 1 = proposta genérica sem conexão.
+   - mensagem_clara (peso 20pts): Expôs a mensagem de forma clara e objetiva.
+     Score 5 = comunicação clara, direta e fácil de entender; 3 = razoavelmente claro; 1 = mensagem confusa ou excessivamente técnica.
+   - beneficios_proposta (peso 20pts): Apresentou os benefícios da proposta para o cliente — não apenas características.
+     Score 5 = benefícios concretos conectados ao contexto do cliente; 3 = alguns benefícios; 1 = falou só de características, sem benefícios.
+
+5. OBJEÇÕES
+   - contorno_objecoes (peso 20pts): Contornou as objeções com argumentos convincentes.
+     Score 5 = respondeu objeções com empatia e dados relevantes; 3 = respondeu parcialmente; 1 = ignorou ou rejeitou objeções.
+     Se não houve objeções explícitas, avalie a capacidade de antecipar e tratar resistências latentes.
+
+6. ENCERRAMENTO
+   - conclusao_visita (peso 20pts): Verificou o entendimento e concluiu a visita com próximos passos definidos.
+     Score 5 = confirmou entendimento mútuo e definiu próximos passos claros; 3 = encerramento parcial; 1 = não encerrou ou deixou a visita sem conclusão.
+
+Para cada comportamento, forneça:
+- score: inteiro de 1 a 5
+- evidence: trecho ou observação da conversa que justifica o score (máximo 2 frases em português)
+
+Além disso, forneça:
+- strengths: pontos fortes gerais do vendedor nesta sessão (2-3 frases)
+- improvements: principais áreas de melhoria prioritárias (2-3 frases)
+- techniques_used: array com técnicas de vendas utilizadas (ex: ["escuta reflexiva", "perguntas abertas", "ancoragem de benefícios"])
+- techniques_missed: array com técnicas que poderiam ter sido aplicadas mas não foram`
 }

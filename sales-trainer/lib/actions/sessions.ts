@@ -1,8 +1,9 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { requireAuth } from '@/lib/actions/auth-helpers'
+import { requireAuth, requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { CreateSessionSchema, UpdateSessionStatusSchema } from '@/lib/schemas/session'
 
@@ -21,7 +22,7 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
 
   const { data: profileRaw, error: profileError } = await supabase
     .from('customer_profiles')
-    .select('id, name, difficulty_level')
+    .select('id, name, difficulty_level, behavior_style_id')
     .eq('id', customer_profile_id)
     .eq('organization_id', user.organization_id)
     .eq('is_active', true)
@@ -35,21 +36,26 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
     id: string
     name: string
     difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
+    behavior_style_id: string | null
   }
   const sessionDifficulty =
     profile.difficulty_level === 'trainee_choice' ? difficulty_level ?? 'medium' : null
 
-  const { data: behaviorStylesRaw } = await supabase
-    .from('behavior_styles')
-    .select('id')
-    .eq('organization_id', user.organization_id)
-    .eq('is_active', true)
+  // Usa o estilo fixo do perfil ou sorteia aleatoriamente
+  let behaviorStyleId = profile.behavior_style_id
+  if (!behaviorStyleId) {
+    const { data: behaviorStylesRaw } = await supabase
+      .from('behavior_styles')
+      .select('id')
+      .eq('organization_id', user.organization_id)
+      .eq('is_active', true)
 
-  const behaviorStyles = (behaviorStylesRaw ?? []) as { id: string }[]
-  const randomBehaviorStyle =
-    behaviorStyles.length > 0
-      ? behaviorStyles[Math.floor(Math.random() * behaviorStyles.length)]
-      : null
+    const behaviorStyles = (behaviorStylesRaw ?? []) as { id: string }[]
+    behaviorStyleId =
+      behaviorStyles.length > 0
+        ? (behaviorStyles[Math.floor(Math.random() * behaviorStyles.length)]?.id ?? null)
+        : null
+  }
 
   const { data: sessionRaw, error } = await supabase
     .from('training_sessions')
@@ -58,7 +64,7 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
       seller_id: user.id,
       organization_id: user.organization_id,
       title: `Treino com ${profile.name}`,
-      behavior_style_id: randomBehaviorStyle?.id ?? null,
+      behavior_style_id: behaviorStyleId,
       difficulty_level: sessionDifficulty,
     })
     .select('id')
@@ -67,7 +73,7 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
   if (error || !sessionRaw) throw new Error('Erro ao criar sessão.')
 
   const session = sessionRaw as { id: string }
-  redirect(`/train/${session.id}`)
+  redirect(`/train/${session.id}/briefing`)
 }
 
 export async function endSession(rawInput: unknown) {
@@ -85,28 +91,36 @@ export async function endSession(rawInput: unknown) {
 
   if (error) throw new Error('Erro ao encerrar sessão.')
 
-  if (status === 'completed' && process.env.N8N_WEBHOOK_URL) {
-    await triggerEvaluation(session_id).catch(() => {
-      // não bloqueia o fluxo principal
-    })
+  if (status === 'completed') {
+    const h = await headers()
+    const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
+    const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
+
+    // Aguarda o 202 (retorno rápido); avaliação roda em background via after() na route
+    await fetch(`${proto}://${host}/api/evaluate-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id }),
+    }).catch((err) => console.error('[evaluate-session]', err))
   }
 
   revalidatePath('/train')
   revalidatePath(`/train/${session_id}`)
 }
 
-async function triggerEvaluation(sessionId: string) {
-  const webhookUrl = process.env.N8N_WEBHOOK_URL
-  const secret = process.env.N8N_WEBHOOK_SECRET
+export async function abandonSessionAsAdmin(sessionId: string) {
+  const user = await requireAdmin()
+  const supabase = await createClient()
 
-  if (!webhookUrl) return
+  const { error } = await supabase
+    .from('training_sessions')
+    .update({ status: 'abandoned', ended_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('organization_id', user.organization_id)
+    .eq('status', 'active')
 
-  await fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(secret ? { 'x-webhook-secret': secret } : {}),
-    },
-    body: JSON.stringify({ event: 'session.completed', session_id: sessionId }),
-  })
+  if (error) throw new Error('Erro ao encerrar sessão.')
+
+  revalidatePath('/admin/sessions')
+  revalidatePath(`/admin/sessions/${sessionId}`)
 }

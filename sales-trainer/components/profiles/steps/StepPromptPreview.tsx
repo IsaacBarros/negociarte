@@ -45,6 +45,8 @@ export function StepPromptPreview({ values }: Props) {
       marketing_strategy: values.marketing_strategy ?? null,
       scenario_type: values.scenario_type ?? null,
       difficulty_level: values.difficulty_level ?? null,
+      behavior_style_id: values.behavior_style_id ?? null,
+      chat_model: values.chat_model ?? null,
       system_prompt: '',
       is_active: values.is_active ?? true,
       created_at: '',

@@ -2,6 +2,7 @@
 
 import { ProfileFormField } from '@/components/profiles/ProfileFormField'
 import { ProfileSectionCard } from '@/components/profiles/ProfileSectionCard'
+import { SELECTABLE_CHAT_MODELS } from '@/lib/ai/models'
 import type { StepProps } from './types'
 
 const inputClass =
@@ -9,7 +10,7 @@ const inputClass =
 const textareaClass =
   'w-full rounded-md border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900'
 
-export function StepScenario({ form, suggestField, suggestingField }: StepProps) {
+export function StepScenario({ form, suggestField, suggestingField, behaviorStyles = [] }: StepProps) {
   const {
     register,
     formState: { errors },
@@ -48,10 +49,47 @@ export function StepScenario({ form, suggestField, suggestingField }: StepProps)
               <option value="easy">Fácil</option>
               <option value="medium">Médio</option>
               <option value="hard">Difícil</option>
-              <option value="trainee_choice">Escolha do cliente</option>
+              <option value="trainee_choice">Escolha do vendedor</option>
             </select>
           </ProfileFormField>
         </div>
+
+        {behaviorStyles.length > 0 && (
+          <ProfileFormField
+            label="Estilo de comportamento fixo"
+            description="Se selecionado, este estilo será sempre usado neste cenário. Deixe em branco para seleção aleatória."
+            error={errors.behavior_style_id?.message}
+          >
+            <select
+              {...register('behavior_style_id', { setValueAs: (value) => value || undefined })}
+              className={`${inputClass} bg-white`}
+            >
+              <option value="">Aleatório (padrão)</option>
+              {behaviorStyles.map((style) => (
+                <option key={style.id} value={style.id}>
+                  {style.name}
+                </option>
+              ))}
+            </select>
+          </ProfileFormField>
+        )}
+
+        <ProfileFormField
+          label="Modelo de IA"
+          description="LLM que interpretará o cliente neste cenário. O padrão usa a configuração global."
+          error={errors.chat_model?.message}
+        >
+          <select
+            {...register('chat_model', { setValueAs: (value) => value || null })}
+            className={`${inputClass} bg-white`}
+          >
+            {SELECTABLE_CHAT_MODELS.map((model) => (
+              <option key={model.modelId ?? '__default__'} value={model.modelId ?? ''}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        </ProfileFormField>
 
         <ProfileFormField
           label="Briefing visível ao vendedor"

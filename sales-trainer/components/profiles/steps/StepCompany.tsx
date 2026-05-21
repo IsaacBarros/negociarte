@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { ProfileFormField } from '@/components/profiles/ProfileFormField'
 import { ProfileSectionCard } from '@/components/profiles/ProfileSectionCard'
 import type { StepProps } from './types'
@@ -13,9 +14,30 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form
-  const selectedCompany = companies.find((company) => company.id === watch('company_id'))
+
+  const companyId = watch('company_id')
+  const prevCompanyId = useRef(companyId)
+
+  useEffect(() => {
+    if (companyId === prevCompanyId.current) return
+    prevCompanyId.current = companyId
+
+    if (!companyId) return
+    const company = companies.find((c) => c.id === companyId)
+    if (!company) return
+
+    if (company.industry) setValue('industry', company.industry, { shouldDirty: true })
+    if (company.company_size) setValue('company_size', company.company_size, { shouldDirty: true })
+    if (company.product_context) setValue('product_context', company.product_context, { shouldDirty: true })
+    if (company.market_situation) setValue('market_situation', company.market_situation, { shouldDirty: true })
+    if (company.competition_context) setValue('competition_context', company.competition_context, { shouldDirty: true })
+    if (company.marketing_strategy) setValue('marketing_strategy', company.marketing_strategy, { shouldDirty: true })
+  }, [companyId, companies, setValue])
+
+  const selectedCompany = companies.find((company) => company.id === companyId)
 
   return (
     <ProfileSectionCard
@@ -25,7 +47,7 @@ export function StepCompany({ form, suggestField, suggestingField, companies = [
       <ProfileFormField
         label="Empresa do cenário"
         required
-        description="Escolha a empresa criada anteriormente. O cenário usará esse contexto como base."
+        description="Escolha a empresa criada anteriormente. Os campos abaixo serão preenchidos automaticamente."
         error={errors.company_id?.message}
       >
         <select

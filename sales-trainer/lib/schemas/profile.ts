@@ -26,6 +26,8 @@ export const CustomerProfileSchema = z.object({
   marketing_strategy: z.string().max(2000).optional(),
   scenario_type: z.string().max(100).optional(),
   difficulty_level: z.enum(['easy', 'medium', 'hard', 'trainee_choice']).optional(),
+  behavior_style_id: z.string().uuid().optional(),
+  chat_model: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
 })
 

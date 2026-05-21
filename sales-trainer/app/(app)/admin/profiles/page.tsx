@@ -15,6 +15,10 @@ const scenarioLabel: Record<string, string> = {
   objection_handling: 'Objeções',
   closing: 'Fechamento',
 }
+const modelLabel: Record<string, string> = {
+  'x-ai/grok-4.3': 'Grok 4.3',
+  'google/gemini-3.1-flash-lite': 'Gemini Flash',
+}
 
 export default async function AdminProfilesPage() {
   const user = await requireAdmin()
@@ -22,13 +26,13 @@ export default async function AdminProfilesPage() {
 
   const { data: profiles } = await supabase
     .from('customer_profiles')
-    .select('id, name, description, difficulty_level, is_active, scenario_type, created_at')
+    .select('id, name, description, difficulty_level, is_active, scenario_type, chat_model, buyer_role, industry, created_at')
     .eq('organization_id', user.organization_id)
     .order('created_at', { ascending: false })
 
   const typedProfiles = (profiles ?? []) as Pick<
     Profile,
-    'id' | 'name' | 'description' | 'difficulty_level' | 'is_active' | 'scenario_type' | 'created_at'
+    'id' | 'name' | 'description' | 'difficulty_level' | 'is_active' | 'scenario_type' | 'chat_model' | 'buyer_role' | 'industry' | 'created_at'
   >[]
 
   return (
@@ -84,9 +88,16 @@ export default async function AdminProfilesPage() {
                     {scenarioLabel[p.scenario_type] ?? p.scenario_type}
                   </span>
                 )}
+                {p.chat_model && (
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                    {modelLabel[p.chat_model] ?? p.chat_model}
+                  </span>
+                )}
               </div>
-              {p.description && (
-                <p className="mt-1 text-sm text-neutral-500 truncate">{p.description}</p>
+              {(p.buyer_role ?? p.industry ?? p.description) && (
+                <p className="mt-1 text-xs text-neutral-400 truncate">
+                  {[p.buyer_role, p.industry].filter(Boolean).join(' · ') || p.description}
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">

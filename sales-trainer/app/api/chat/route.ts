@@ -75,11 +75,12 @@ export async function POST(request: Request) {
 
   const { data: profileRaw } = await supabase
     .from('customer_profiles')
-    .select('system_prompt')
+    .select('system_prompt, chat_model')
     .eq('id', session.customer_profile_id)
     .single()
 
-  const systemPrompt = (profileRaw as { system_prompt: string } | null)?.system_prompt
+  const profile = profileRaw as { system_prompt: string; chat_model: string | null } | null
+  const systemPrompt = profile?.system_prompt
   if (!systemPrompt) {
     return new Response('Perfil não encontrado.', { status: 404 })
   }
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
     })
   }
 
-  const model = modelFor('chat')
+  const model = profile.chat_model ?? modelFor('chat')
 
   const streamResult = streamText({
     model: openrouter(model),

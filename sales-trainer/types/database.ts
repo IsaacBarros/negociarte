@@ -62,6 +62,7 @@ export type Database = {
           created_by: string | null
           company_id: string | null
           customer_id: string | null
+          behavior_style_id: string | null
           name: string
           description: string | null
           buyer_role: string | null
@@ -85,6 +86,7 @@ export type Database = {
           marketing_strategy: string | null
           scenario_type: string | null
           difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
+          chat_model: string | null
           system_prompt: string
           is_active: boolean
           created_at: string
@@ -96,6 +98,7 @@ export type Database = {
           created_by?: string | null
           company_id?: string | null
           customer_id?: string | null
+          behavior_style_id?: string | null
           name: string
           description?: string | null
           buyer_role?: string | null
@@ -119,6 +122,7 @@ export type Database = {
           marketing_strategy?: string | null
           scenario_type?: string | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
+          chat_model?: string | null
           system_prompt: string
           is_active?: boolean
           created_at?: string
@@ -130,6 +134,7 @@ export type Database = {
           created_by?: string | null
           company_id?: string | null
           customer_id?: string | null
+          behavior_style_id?: string | null
           name?: string
           description?: string | null
           buyer_role?: string | null
@@ -153,6 +158,7 @@ export type Database = {
           marketing_strategy?: string | null
           scenario_type?: string | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
+          chat_model?: string | null
           system_prompt?: string
           is_active?: boolean
           created_at?: string
@@ -391,6 +397,7 @@ export type Database = {
           improvements: string | null
           techniques_used: string[] | null
           techniques_missed: string[] | null
+          competency_scores: Json | null
           raw_evaluation: Json | null
           model_used: string | null
           generated_by: string
@@ -404,6 +411,7 @@ export type Database = {
           improvements?: string | null
           techniques_used?: string[] | null
           techniques_missed?: string[] | null
+          competency_scores?: Json | null
           raw_evaluation?: Json | null
           model_used?: string | null
           generated_by?: string
@@ -417,6 +425,7 @@ export type Database = {
           improvements?: string | null
           techniques_used?: string[] | null
           techniques_missed?: string[] | null
+          competency_scores?: Json | null
           raw_evaluation?: Json | null
           model_used?: string | null
           generated_by?: string

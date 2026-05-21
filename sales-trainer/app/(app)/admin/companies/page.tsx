@@ -35,7 +35,11 @@ export default async function CompaniesPage() {
 
       <div className="space-y-3">
         {companies?.map((company) => (
-          <div key={company.id} className="rounded-lg border border-neutral-200 p-4">
+          <Link
+            key={company.id}
+            href={`/admin/companies/${company.id}`}
+            className="block rounded-lg border border-neutral-200 p-4 hover:border-neutral-400 hover:bg-neutral-50"
+          >
             <div className="flex items-center gap-2">
               <p className="font-medium">{company.name}</p>
               {!company.is_active && (
@@ -47,12 +51,12 @@ export default async function CompaniesPage() {
             {company.description && (
               <p className="mt-1 text-sm text-neutral-500">{company.description}</p>
             )}
-            {(company.industry || company.company_size) && (
+            {(company.industry ?? company.company_size) && (
               <p className="mt-2 text-xs text-neutral-400">
                 {[company.industry, company.company_size].filter(Boolean).join(' · ')}
               </p>
             )}
-          </div>
+          </Link>
         ))}
       </div>
     </div>

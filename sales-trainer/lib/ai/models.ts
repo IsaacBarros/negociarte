@@ -14,3 +14,9 @@ export function modelFor(purpose: Purpose): string {
   }
   return envMap[purpose] ?? defaults[purpose]
 }
+
+export const SELECTABLE_CHAT_MODELS: { label: string; modelId: string | null }[] = [
+  { label: 'Padrão (Claude Sonnet)', modelId: null },
+  { label: 'xAI Grok 4.3', modelId: 'x-ai/grok-4.3' },
+  { label: 'Google Gemini 3.1 Flash Lite', modelId: 'google/gemini-3.1-flash-lite' },
+]

@@ -35,7 +35,11 @@ export default async function CustomersPage() {
 
       <div className="space-y-3">
         {customers?.map((customer) => (
-          <div key={customer.id} className="rounded-lg border border-neutral-200 p-4">
+          <Link
+            key={customer.id}
+            href={`/admin/customers/${customer.id}`}
+            className="block rounded-lg border border-neutral-200 p-4 hover:border-neutral-400 hover:bg-neutral-50"
+          >
             <div className="flex items-center gap-2">
               <p className="font-medium">{customer.name}</p>
               {!customer.is_active && (
@@ -47,12 +51,12 @@ export default async function CustomersPage() {
             {customer.description && (
               <p className="mt-1 text-sm text-neutral-500">{customer.description}</p>
             )}
-            {(customer.buyer_role || customer.communication_style) && (
+            {(customer.buyer_role ?? customer.communication_style) && (
               <p className="mt-2 text-xs text-neutral-400">
                 {[customer.buyer_role, customer.communication_style].filter(Boolean).join(' · ')}
               </p>
             )}
-          </div>
+          </Link>
         ))}
       </div>
     </div>

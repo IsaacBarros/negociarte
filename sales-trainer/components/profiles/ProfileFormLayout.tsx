@@ -23,12 +23,30 @@ interface Props {
     id: string
     name: string
     description: string | null
+    industry: string | null
+    company_size: string | null
+    product_context: string | null
+    market_situation: string | null
+    competition_context: string | null
+    marketing_strategy: string | null
   }[]
   customers?: {
     id: string
     name: string
     description: string | null
     buyer_role: string | null
+    pain_points: string | null
+    objections: string | null
+    budget_context: string | null
+    decision_authority: string | null
+    personality_traits: string | null
+    communication_style: string | null
+    confidential_context: string | null
+  }[]
+  behaviorStyles?: {
+    id: string
+    name: string
+    description: string
   }[]
 }
 
@@ -50,6 +68,7 @@ export function ProfileFormLayout({
   submitLabel = 'Salvar',
   companies = [],
   customers = [],
+  behaviorStyles = [],
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('company')
   const {
@@ -128,7 +147,12 @@ export function ProfileFormLayout({
         />
       )}
       {activeTab === 'scenario' && (
-        <StepScenario form={form} suggestField={suggestField} suggestingField={suggestingField} />
+        <StepScenario
+          form={form}
+          suggestField={suggestField}
+          suggestingField={suggestingField}
+          behaviorStyles={behaviorStyles}
+        />
       )}
       {activeTab === 'preview' && <StepPromptPreview values={values} />}
 

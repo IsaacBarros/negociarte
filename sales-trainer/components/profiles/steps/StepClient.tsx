@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { ProfileFormField } from '@/components/profiles/ProfileFormField'
 import { ProfileSectionCard } from '@/components/profiles/ProfileSectionCard'
 import type { StepProps } from './types'
@@ -13,9 +14,32 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form
-  const selectedCustomer = customers.find((customer) => customer.id === watch('customer_id'))
+
+  const customerId = watch('customer_id')
+  const prevCustomerId = useRef(customerId)
+
+  useEffect(() => {
+    if (customerId === prevCustomerId.current) return
+    prevCustomerId.current = customerId
+
+    if (!customerId) return
+    const customer = customers.find((c) => c.id === customerId)
+    if (!customer) return
+
+    if (customer.buyer_role) setValue('buyer_role', customer.buyer_role, { shouldDirty: true })
+    if (customer.pain_points) setValue('pain_points', customer.pain_points, { shouldDirty: true })
+    if (customer.objections) setValue('objections', customer.objections, { shouldDirty: true })
+    if (customer.budget_context) setValue('budget_context', customer.budget_context, { shouldDirty: true })
+    if (customer.decision_authority) setValue('decision_authority', customer.decision_authority, { shouldDirty: true })
+    if (customer.personality_traits) setValue('personality_traits', customer.personality_traits, { shouldDirty: true })
+    if (customer.communication_style) setValue('communication_style', customer.communication_style, { shouldDirty: true })
+    if (customer.confidential_context) setValue('confidential_context', customer.confidential_context, { shouldDirty: true })
+  }, [customerId, customers, setValue])
+
+  const selectedCustomer = customers.find((customer) => customer.id === customerId)
 
   return (
     <ProfileSectionCard
@@ -25,7 +49,7 @@ export function StepClient({ form, suggestField, suggestingField, customers = []
       <ProfileFormField
         label="Cliente do cenário"
         required
-        description="Escolha o cliente criado anteriormente. O cenário usará essa persona como base."
+        description="Escolha o cliente criado anteriormente. Os campos abaixo serão preenchidos automaticamente."
         error={errors.customer_id?.message}
       >
         <select

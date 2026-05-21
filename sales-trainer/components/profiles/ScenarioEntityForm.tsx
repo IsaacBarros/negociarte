@@ -17,10 +17,12 @@ type Props =
   | {
       kind: 'company'
       action: (data: ScenarioCompanyInput) => Promise<void>
+      initialData?: Partial<ScenarioCompanyInput>
     }
   | {
       kind: 'customer'
       action: (data: ScenarioCustomerInput) => Promise<void>
+      initialData?: Partial<ScenarioCustomerInput>
     }
 
 const inputClass =
@@ -30,29 +32,35 @@ const textareaClass =
 
 export function ScenarioEntityForm(props: Props) {
   return props.kind === 'company' ? (
-    <CompanyForm action={props.action} />
+    <CompanyForm action={props.action} initialData={props.initialData} />
   ) : (
-    <CustomerForm action={props.action} />
+    <CustomerForm action={props.action} initialData={props.initialData} />
   )
 }
 
-function CompanyForm({ action }: { action: (data: ScenarioCompanyInput) => Promise<void> }) {
+function CompanyForm({
+  action,
+  initialData,
+}: {
+  action: (data: ScenarioCompanyInput) => Promise<void>
+  initialData?: Partial<ScenarioCompanyInput>
+}) {
   const [error, setError] = useState<string | null>(null)
   const [suggestingField, setSuggestingField] = useState<string | null>(null)
   const [submitting, startTransition] = useTransition()
   const form = useForm<ScenarioCompanyInput>({
     resolver: zodResolver(ScenarioCompanySchema),
     defaultValues: {
-      name: '',
-      description: '',
-      industry: '',
-      company_size: '',
-      products_services: [{ name: '', description: '' }],
-      product_context: '',
-      market_situation: '',
-      competition_context: '',
-      marketing_strategy: '',
-      is_active: true,
+      name: initialData?.name ?? '',
+      description: initialData?.description ?? '',
+      industry: initialData?.industry ?? '',
+      company_size: initialData?.company_size ?? '',
+      products_services: initialData?.products_services ?? [{ name: '', description: '' }],
+      product_context: initialData?.product_context ?? '',
+      market_situation: initialData?.market_situation ?? '',
+      competition_context: initialData?.competition_context ?? '',
+      marketing_strategy: initialData?.marketing_strategy ?? '',
+      is_active: initialData?.is_active ?? true,
     },
   })
   const {
@@ -291,24 +299,30 @@ function CompanyForm({ action }: { action: (data: ScenarioCompanyInput) => Promi
   )
 }
 
-function CustomerForm({ action }: { action: (data: ScenarioCustomerInput) => Promise<void> }) {
+function CustomerForm({
+  action,
+  initialData,
+}: {
+  action: (data: ScenarioCustomerInput) => Promise<void>
+  initialData?: Partial<ScenarioCustomerInput>
+}) {
   const [error, setError] = useState<string | null>(null)
   const [suggestingField, setSuggestingField] = useState<string | null>(null)
   const [submitting, startTransition] = useTransition()
   const form = useForm<ScenarioCustomerInput>({
     resolver: zodResolver(ScenarioCustomerSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      buyer_role: '',
-      pain_points: '',
-      objections: '',
-      budget_context: '',
-      decision_authority: '',
-      personality_traits: '',
-      communication_style: '',
-      confidential_context: '',
-      is_active: true,
+      name: initialData?.name ?? '',
+      description: initialData?.description ?? '',
+      buyer_role: initialData?.buyer_role ?? '',
+      pain_points: initialData?.pain_points ?? '',
+      objections: initialData?.objections ?? '',
+      budget_context: initialData?.budget_context ?? '',
+      decision_authority: initialData?.decision_authority ?? '',
+      personality_traits: initialData?.personality_traits ?? '',
+      communication_style: initialData?.communication_style ?? '',
+      confidential_context: initialData?.confidential_context ?? '',
+      is_active: initialData?.is_active ?? true,
     },
   })
   const {

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
+import { abandonSessionAsAdmin } from '@/lib/actions/sessions'
 import { FeedbackCard } from '@/components/chat/feedback-card'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
@@ -133,11 +134,27 @@ export default async function AdminSessionDetailPage({
       <div className="w-80 shrink-0 overflow-y-auto border-l border-neutral-200 bg-white p-4">
         {feedback ? (
           <FeedbackCard feedback={feedback as Feedback} />
+        ) : session.status === 'active' ? (
+          <div className="space-y-3 pt-6">
+            <p className="text-center text-sm text-neutral-400">Sessão em andamento.</p>
+            <Link
+              href={`/train/${id}`}
+              className="block w-full rounded-md bg-neutral-900 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-neutral-700"
+            >
+              Continuar simulação →
+            </Link>
+            <form action={abandonSessionAsAdmin.bind(null, id)}>
+              <button
+                type="submit"
+                className="w-full rounded-md border border-neutral-200 px-4 py-2 text-sm text-neutral-500 hover:border-red-200 hover:text-red-600"
+              >
+                Encerrar sessão
+              </button>
+            </form>
+          </div>
         ) : (
           <div className="pt-8 text-center text-sm text-neutral-400">
-            {session.status === 'completed'
-              ? 'Avaliação em processamento...'
-              : 'Sessão ainda não encerrada.'}
+            Avaliação em processamento...
           </div>
         )}
       </div>

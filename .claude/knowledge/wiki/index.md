@@ -24,7 +24,7 @@ _Schema, políticas RLS, índices e decisões de modelagem._
 
 _Prompts, modelos, avaliação de qualidade, custo._
 
-<!-- ex.: [Template de persona — campos e comportamento esperado](ia/persona-template.md) -->
+- [Competências de Vendas e Estilos de Comportamento](ia/competencias-e-estilos.md) — framework pedagógico da Negociarte: 5 competências avaliadas (com sub-critérios e chaves do schema) e 4 estilos de comportamento de cliente (Analítico, Dominante, Influente, Integrador)
 
 ---
 

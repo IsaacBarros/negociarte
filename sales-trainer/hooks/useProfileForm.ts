@@ -46,6 +46,8 @@ const formFields = [
   'marketing_strategy',
   'scenario_type',
   'difficulty_level',
+  'behavior_style_id',
+  'chat_model',
 ] satisfies (keyof CustomerProfileInput)[]
 
 function readCreateDraft(orgId: string): Partial<CustomerProfileInput> {
@@ -93,6 +95,8 @@ function defaultsFrom(
     marketing_strategy: initialData?.marketing_strategy ?? draft.marketing_strategy ?? '',
     scenario_type: initialData?.scenario_type ?? draft.scenario_type ?? '',
     difficulty_level: initialData?.difficulty_level ?? draft.difficulty_level,
+    behavior_style_id: initialData?.behavior_style_id ?? draft.behavior_style_id,
+    chat_model: initialData?.chat_model ?? draft.chat_model ?? null,
     is_active: initialData?.is_active ?? draft.is_active ?? true,
   }
 }

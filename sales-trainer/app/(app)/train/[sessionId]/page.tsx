@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { ChatWindow } from '@/components/chat/chat-window'
 import { FeedbackCard } from '@/components/chat/feedback-card'
+import { FeedbackPoller } from '@/components/chat/feedback-poller'
 import type { UIMessage } from 'ai'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
@@ -82,9 +83,13 @@ export default async function SessionPage({
         initialMessages={initialMessages}
         sessionEnded={isEnded}
       />
-      {isEnded && feedback && (
+      {isEnded && (
         <div className="absolute bottom-0 right-0 top-14 w-80 overflow-y-auto border-l border-neutral-200 bg-white p-4">
-          <FeedbackCard feedback={feedback} />
+          {feedback ? (
+            <FeedbackCard feedback={feedback} />
+          ) : (
+            <FeedbackPoller sessionId={sessionId} />
+          )}
         </div>
       )}
     </div>

@@ -103,6 +103,8 @@ export async function createProfile(rawInput: unknown) {
     marketing_strategy: toNullable(input.marketing_strategy) ?? company?.marketing_strategy ?? null,
     scenario_type: toNullable(input.scenario_type),
     difficulty_level: toNullable(input.difficulty_level),
+    behavior_style_id: toNullable(input.behavior_style_id),
+    chat_model: toNullable(input.chat_model),
     is_active: input.is_active ?? true,
     system_prompt: '',
   }
@@ -176,6 +178,8 @@ export async function updateProfile(id: string, rawInput: unknown) {
     marketing_strategy: toNullable(input.marketing_strategy) ?? company?.marketing_strategy ?? null,
     scenario_type: toNullable(input.scenario_type),
     difficulty_level: toNullable(input.difficulty_level),
+    behavior_style_id: toNullable(input.behavior_style_id),
+    chat_model: toNullable(input.chat_model),
     is_active: input.is_active ?? true,
   }
 
