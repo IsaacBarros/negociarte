@@ -32,6 +32,19 @@ export default async function TrainPage() {
   const user = await requireAuth()
   const supabase = await createClient()
 
+  const { data: activeSessionRaw } = await supabase
+    .from('training_sessions')
+    .select('id, title, customer_profile_id')
+    .eq('seller_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const activeSession = activeSessionRaw as {
+    id: string
+    title: string | null
+    customer_profile_id: string
+  } | null
+
   const { data: profilesRaw } = await supabase
     .from('customer_profiles')
     .select(
@@ -76,6 +89,21 @@ export default async function TrainPage() {
         Leia o briefing e o objetivo da visita antes de iniciar. O estilo comportamental do cliente
         será sorteado automaticamente pelo simulador.
       </p>
+
+      {activeSession && (
+        <div className="mb-6 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            Você tem uma simulação em andamento:{' '}
+            <span className="font-medium">{activeSession.title ?? 'Sessão ativa'}</span>
+          </p>
+          <a
+            href={`/train/${activeSession.id}`}
+            className="ml-4 shrink-0 rounded-md bg-amber-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+          >
+            Continuar sessão
+          </a>
+        </div>
+      )}
 
       {!profiles.length && (
         <div className="rounded-lg border border-dashed border-neutral-200 px-6 py-16 text-center">
@@ -156,7 +184,8 @@ export default async function TrainPage() {
                 )}
                 <SubmitButton
                   pendingText="Iniciando..."
-                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+                  disabled={!!activeSession}
+                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Iniciar simulação
                 </SubmitButton>
