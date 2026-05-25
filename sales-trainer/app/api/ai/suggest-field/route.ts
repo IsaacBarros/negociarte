@@ -43,6 +43,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
   }
 
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profileData || profileData.role !== 'admin') {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 403 })
+  }
+
   const body: unknown = await request.json()
   const result = RequestSchema.safeParse(body)
 

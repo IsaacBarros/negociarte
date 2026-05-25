@@ -11,6 +11,7 @@ export default async function AdminAnalyticsPage() {
   const [
     { count: totalSessions },
     { count: completedSessions },
+    { count: acceptedSessions },
     { data: profilesData },
     { data: sellersData },
     { data: feedbackData },
@@ -27,6 +28,13 @@ export default async function AdminAnalyticsPage() {
       .eq('status', 'completed'),
 
     supabase
+      .from('training_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', user.organization_id)
+      .eq('status', 'completed')
+      .eq('outcome', 'accepted'),
+
+    supabase
       .from('customer_profiles')
       .select('id, name')
       .eq('organization_id', user.organization_id)
@@ -40,13 +48,15 @@ export default async function AdminAnalyticsPage() {
       .eq('role', 'seller')
       .limit(10),
 
+    // JOIN via training_sessions para garantir filtro por org
     supabase
       .from('session_feedback')
-      .select('overall_score, session_id')
-      .limit(200),
+      .select('overall_score, training_sessions!inner(organization_id)')
+      .eq('training_sessions.organization_id', user.organization_id)
+      .limit(500),
   ])
 
-  const typedFeedback = (feedbackData ?? []) as { overall_score: number | null; session_id: string }[]
+  const typedFeedback = (feedbackData ?? []) as { overall_score: number | null }[]
   const scores = typedFeedback.map((d) => d.overall_score).filter((s): s is number => s !== null)
   const avgScore =
     scores.length > 0
@@ -56,10 +66,15 @@ export default async function AdminAnalyticsPage() {
   const typedProfiles = (profilesData ?? []) as { id: string; name: string }[]
   const typedSellers = (sellersData ?? []) as { id: string; full_name: string | null; email: string }[]
 
+  const conversionRate =
+    completedSessions && (acceptedSessions ?? 0) > 0
+      ? `${Math.round(((acceptedSessions ?? 0) / completedSessions) * 100)}%`
+      : '—'
+
   const stats = [
     { label: 'Total de sessões', value: totalSessions ?? 0 },
     { label: 'Sessões concluídas', value: completedSessions ?? 0 },
-    { label: 'Nota média', value: avgScore ? `${avgScore}/10` : '—' },
+    { label: 'Nota média', value: avgScore ? `${avgScore}/200` : '—' },
     {
       label: 'Taxa de conclusão',
       value:
@@ -67,13 +82,15 @@ export default async function AdminAnalyticsPage() {
           ? `${Math.round((completedSessions / totalSessions) * 100)}%`
           : '—',
     },
+    { label: 'Sessões com aceite', value: acceptedSessions ?? 0 },
+    { label: 'Taxa de conversão (aceite)', value: conversionRate },
   ]
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <h1 className="mb-6 text-xl font-semibold">Analytics</h1>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border border-neutral-200 p-4">
             <p className="text-xs text-neutral-400">{s.label}</p>

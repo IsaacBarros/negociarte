@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     parts: message.parts as UIMessage['parts'],
     metadata: {},
   }))
+
   const modelMessages = await convertToModelMessages(uiMessages)
 
   const { data: sessionRaw, error: sessionError } = await supabase

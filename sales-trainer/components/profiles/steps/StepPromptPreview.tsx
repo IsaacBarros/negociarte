@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, AlertTriangle } from 'lucide-react'
 import { buildPersonaPrompt } from '@/lib/ai/prompts/persona-template'
 import type { CustomerProfileInput } from '@/lib/schemas/profile'
 import type { Database } from '@/types/database'
@@ -10,10 +10,21 @@ type CustomerProfile = Database['public']['Tables']['customer_profiles']['Row']
 
 interface Props {
   values: Partial<CustomerProfileInput>
+  profileUpdatedAt?: string | null
+  companyUpdatedAt?: string | null
+  customerUpdatedAt?: string | null
 }
 
-export function StepPromptPreview({ values }: Props) {
+export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt }: Props) {
   const [copied, setCopied] = useState(false)
+
+  const isStale = useMemo(() => {
+    if (!profileUpdatedAt) return false
+    const profileDate = new Date(profileUpdatedAt).getTime()
+    const companyDate = companyUpdatedAt ? new Date(companyUpdatedAt).getTime() : 0
+    const customerDate = customerUpdatedAt ? new Date(customerUpdatedAt).getTime() : 0
+    return companyDate > profileDate || customerDate > profileDate
+  }, [profileUpdatedAt, companyUpdatedAt, customerUpdatedAt])
 
   const prompt = useMemo(() => {
     const asProfile: CustomerProfile = {
@@ -63,7 +74,19 @@ export function StepPromptPreview({ values }: Props) {
   }
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white">
+    <section className="space-y-3">
+      {isStale && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+          <div className="flex-1 text-sm text-amber-800">
+            <p className="font-medium">Empresa ou cliente atualizados após a última compilação</p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              Este preview já reflete os valores atuais do formulário. Salve o cenário para recompilar o prompt com os dados mais recentes.
+            </p>
+          </div>
+        </div>
+      )}
+      <div className="rounded-lg border border-neutral-200 bg-white">
       <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
         <div>
           <h2 className="text-sm font-semibold text-neutral-900">Preview do prompt</h2>
@@ -82,6 +105,7 @@ export function StepPromptPreview({ values }: Props) {
         <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-neutral-700">
           {prompt}
         </pre>
+      </div>
       </div>
     </section>
   )

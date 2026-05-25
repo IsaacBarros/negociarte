@@ -11,6 +11,8 @@ interface EvaluationContext {
   behaviorStyleName?: string | null
   behaviorStyleDescription?: string | null
   behaviorEvaluationCriteria?: string | null
+  messageCount?: number
+  durationMinutes?: number | null
   messages: Message[]
 }
 
@@ -26,6 +28,8 @@ export function buildEvaluatorPrompt(ctx: EvaluationContext): string {
     behaviorStyleName,
     behaviorStyleDescription,
     behaviorEvaluationCriteria,
+    messageCount,
+    durationMinutes,
     messages,
   } = ctx
 
@@ -41,11 +45,17 @@ export function buildEvaluatorPrompt(ctx: EvaluationContext): string {
     ? `Dificuldade: ${difficultyLevel === 'easy' ? 'Fácil' : difficultyLevel === 'medium' ? 'Médio' : 'Difícil'}.`
     : ''
 
+  const volumeContext = [
+    messageCount !== undefined ? `Turnos na conversa: ${messageCount}` : null,
+    durationMinutes !== null && durationMinutes !== undefined ? `Duração: ${durationMinutes} min` : null,
+  ].filter(Boolean).join(' | ')
+
   return `Você é um coach de vendas especializado da Negociarte. Avalie a performance do vendedor na conversa de treino abaixo seguindo o processo de vendas estruturado em 6 etapas.
 
 PERFIL DO CLIENTE SIMULADO: ${profileName}
 ${scenarioContext}
 ${difficultyContext}
+${volumeContext ? `Contexto da sessão: ${volumeContext}.` : ''}
 ${visitObjective ? `Objetivo da visita: ${visitObjective}.` : ''}
 ${successCriteria ? `Critérios de sucesso: ${successCriteria}.` : ''}
 ${behaviorStyleName ? `Estilo comportamental do cliente: ${behaviorStyleName}.` : ''}
@@ -57,7 +67,16 @@ ${salesCompetenciesContext ? `Competências esperadas: ${salesCompetenciesContex
 TRANSCRIÇÃO:
 ${transcript}
 
-PROCESSO DE AVALIAÇÃO — 6 etapas, score de 1 a 5 por comportamento:
+PROCESSO DE AVALIAÇÃO — 6 etapas, score de 0 a 5 por comportamento:
+
+ESCALA DE SCORES:
+Score 5 = Excelente — critério plenamente atendido, de forma consistente
+Score 4 = Bom — critério majoritariamente atendido, com pequenas lacunas
+Score 3 = Parcial — critério atendido de forma incompleta ou inconsistente
+Score 2 = Insuficiente — critério raramente demonstrado
+Score 1 = Não demonstrado — situação na conversa permitia, mas o vendedor não aplicou
+Score 0 = Inaplicável — o comportamento não pôde ser avaliado nesta sessão (ex.: não houve objeções para contornar)
+
 
 1. PLANEJAMENTO
    - preparacao_apresentacao (peso 20pts): Estava preparado para a apresentação — conhecimento do cliente e do produto.
@@ -102,5 +121,6 @@ Além disso, forneça:
 - strengths: pontos fortes gerais do vendedor nesta sessão (2-3 frases)
 - improvements: principais áreas de melhoria prioritárias (2-3 frases)
 - techniques_used: array com técnicas de vendas utilizadas (ex: ["escuta reflexiva", "perguntas abertas", "ancoragem de benefícios"])
-- techniques_missed: array com técnicas que poderiam ter sido aplicadas mas não foram`
+- techniques_missed: array com técnicas que poderiam ter sido aplicadas mas não foram
+- outcome: desfecho da simulação com base na última resposta do cliente — use exatamente um dos valores: "accepted" (cliente aceitou ou comprometeu-se a avançar), "advanced" (cliente quer próximo passo mas sem compromisso final), "refused" (cliente recusou explicitamente), "inconclusive" (conversa encerrou sem decisão clara)`
 }

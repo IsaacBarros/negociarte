@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { createSession } from '@/lib/actions/sessions'
+import { SubmitButton } from '@/components/ui/submit-button'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
@@ -153,12 +154,12 @@ export default async function TrainPage() {
                     </select>
                   </label>
                 )}
-                <button
-                  type="submit"
-                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+                <SubmitButton
+                  pendingText="Iniciando..."
+                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
                 >
                   Iniciar simulação
-                </button>
+                </SubmitButton>
               </div>
             </div>
           </form>

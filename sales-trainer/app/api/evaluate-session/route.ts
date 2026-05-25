@@ -46,7 +46,7 @@ async function runEvaluation(session_id: string): Promise<void> {
   const { data: session } = await adminClient
     .from('training_sessions')
     .select(
-      'id, seller_id, organization_id, status, total_tokens, customer_profile_id, behavior_style_id, outcome, difficulty_level',
+      'id, seller_id, organization_id, status, total_tokens, customer_profile_id, behavior_style_id, outcome, difficulty_level, started_at, ended_at',
     )
     .eq('id', session_id)
     .eq('status', 'completed')
@@ -84,6 +84,13 @@ async function runEvaluation(session_id: string): Promise<void> {
     return
   }
 
+  const durationMinutes =
+    session.started_at && session.ended_at
+      ? Math.round(
+          (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000,
+        )
+      : null
+
   const evaluation = await evaluateSession({
     session: {
       id: session.id,
@@ -102,22 +109,38 @@ async function runEvaluation(session_id: string): Promise<void> {
       behavior_styles: behaviorStyle,
     },
     messages: messages as { role: 'user' | 'assistant'; content: string }[],
+    durationMinutes,
   })
 
   const model = process.env.OPENROUTER_EVAL_MODEL ?? 'openai/gpt-4o-mini'
 
-  const { error: feedbackError } = await adminClient.from('session_feedback').upsert({
-    session_id,
-    overall_score: evaluation.overall_score,
-    strengths: evaluation.strengths,
-    improvements: evaluation.improvements,
-    techniques_used: evaluation.techniques_used,
-    techniques_missed: evaluation.techniques_missed,
-    competency_scores: evaluation.stage_scores,
-    raw_evaluation: evaluation,
-    model_used: model,
-    generated_by: 'ai',
-  })
+  // Mapeia outcome do avaliador para o enum do banco
+  const outcomeMap: Record<string, 'accepted' | 'rejected' | 'ended_by_errors'> = {
+    accepted: 'accepted',
+    advanced: 'accepted',
+    refused: 'rejected',
+    inconclusive: 'ended_by_errors',
+  }
+  const dbOutcome = outcomeMap[evaluation.outcome] ?? 'ended_by_errors'
+
+  const [{ error: feedbackError }] = await Promise.all([
+    adminClient.from('session_feedback').upsert({
+      session_id,
+      overall_score: evaluation.overall_score,
+      strengths: evaluation.strengths,
+      improvements: evaluation.improvements,
+      techniques_used: evaluation.techniques_used,
+      techniques_missed: evaluation.techniques_missed,
+      competency_scores: evaluation.stage_scores,
+      raw_evaluation: evaluation,
+      model_used: model,
+      generated_by: 'ai',
+    }),
+    adminClient
+      .from('training_sessions')
+      .update({ outcome: dbOutcome })
+      .eq('id', session_id),
+  ])
 
   if (feedbackError) {
     console.error('[evaluate-session] Erro ao salvar feedback:', feedbackError)

@@ -9,7 +9,7 @@ type TrainingSession = Database['public']['Tables']['training_sessions']['Row']
 type Message = { role: 'user' | 'assistant'; content: string }
 
 const BehaviorScore = z.object({
-  score: z.number().int().min(1).max(5),
+  score: z.number().int().min(0).max(5),
   evidence: z.string(),
 })
 
@@ -47,6 +47,7 @@ export const EvaluationSchema = z.object({
   techniques_used: z.array(z.string()),
   techniques_missed: z.array(z.string()),
   stage_scores: StageScoresSchema,
+  outcome: z.enum(['accepted', 'advanced', 'refused', 'inconclusive']),
 })
 
 export type EvaluationResult = z.infer<typeof EvaluationSchema> & { overall_score: number }
@@ -96,11 +97,13 @@ interface EvaluateSessionOptions {
     } | null
   }
   messages: Message[]
+  durationMinutes?: number | null
 }
 
 export async function evaluateSession({
   session,
   messages,
+  durationMinutes,
 }: EvaluateSessionOptions): Promise<EvaluationResult> {
   const profile = session.customer_profiles
   const behaviorStyle = session.behavior_styles
@@ -116,6 +119,8 @@ export async function evaluateSession({
     behaviorStyleName: behaviorStyle?.name ?? null,
     behaviorStyleDescription: behaviorStyle?.description ?? null,
     behaviorEvaluationCriteria: behaviorStyle?.evaluation_criteria ?? null,
+    messageCount: messages.length,
+    durationMinutes: durationMinutes ?? null,
     messages,
   })
 

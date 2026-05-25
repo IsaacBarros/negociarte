@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { abandonSessionAsAdmin } from '@/lib/actions/sessions'
 import { FeedbackCard } from '@/components/chat/feedback-card'
+import { FeedbackPoller } from '@/components/chat/feedback-poller'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
 
@@ -153,9 +154,7 @@ export default async function AdminSessionDetailPage({
             </form>
           </div>
         ) : (
-          <div className="pt-8 text-center text-sm text-neutral-400">
-            Avaliação em processamento...
-          </div>
+          <FeedbackPoller sessionId={id} />
         )}
       </div>
     </div>

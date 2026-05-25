@@ -20,6 +20,16 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
 
   const supabase = await createClient()
 
+  const { count: activeCount } = await supabase
+    .from('training_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', user.id)
+    .eq('status', 'active')
+
+  if ((activeCount ?? 0) > 0) {
+    throw new Error('Você já tem uma sessão em andamento. Encerre-a antes de iniciar outra.')
+  }
+
   const { data: profileRaw, error: profileError } = await supabase
     .from('customer_profiles')
     .select('id, name, difficulty_level, behavior_style_id')
@@ -96,10 +106,13 @@ export async function endSession(rawInput: unknown) {
     const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
     const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
 
+    // Forward cookies para que o middleware reconheça a sessão autenticada
+    const cookie = h.get('cookie') ?? ''
+
     // Aguarda o 202 (retorno rápido); avaliação roda em background via after() na route
     await fetch(`${proto}://${host}/api/evaluate-session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
       body: JSON.stringify({ session_id }),
     }).catch((err) => console.error('[evaluate-session]', err))
   }

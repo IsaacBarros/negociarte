@@ -8,16 +8,32 @@ import { Composer } from './composer'
 import { endSession } from '@/lib/actions/sessions'
 import type { UIMessage } from 'ai'
 
+interface BriefingContext {
+  buyerRole?: string | null
+  visibleBriefing?: string | null
+  visitObjective?: string | null
+  successCriteria?: string | null
+  scenarioType?: string | null
+}
+
 interface Props {
   sessionId: string
   profileName: string
   initialMessages: UIMessage[]
   sessionEnded: boolean
+  briefingContext?: BriefingContext
 }
 
-export function ChatWindow({ sessionId, profileName, initialMessages, sessionEnded }: Props) {
+const scenarioLabel: Record<string, string> = {
+  discovery: 'Discovery',
+  objection_handling: 'Objeções',
+  closing: 'Fechamento',
+}
+
+export function ChatWindow({ sessionId, profileName, initialMessages, sessionEnded, briefingContext }: Props) {
   const router = useRouter()
   const [input, setInput] = useState('')
+  const [briefingOpen, setBriefingOpen] = useState(false)
   const { messages, sendMessage, status, stop } = useChatStream(sessionId, initialMessages)
 
   const isLoading = status === 'submitted' || status === 'streaming'
@@ -39,36 +55,101 @@ export function ChatWindow({ sessionId, profileName, initialMessages, sessionEnd
     router.refresh()
   }
 
+  const hasBriefing =
+    briefingContext &&
+    (briefingContext.visibleBriefing ||
+      briefingContext.visitObjective ||
+      briefingContext.successCriteria)
+
   return (
     <div className="flex h-screen flex-col">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4">
-        <div>
-          <p className="text-xs text-neutral-400">Treinando com</p>
-          <p className="text-sm font-medium">{profileName}</p>
+      <div className="border-b border-neutral-200 bg-white">
+        <div className="flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-xs text-neutral-400">Treinando com</p>
+              <p className="text-sm font-medium">{profileName}</p>
+            </div>
+            {briefingContext?.buyerRole && (
+              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">
+                {briefingContext.buyerRole}
+              </span>
+            )}
+            {briefingContext?.scenarioType && scenarioLabel[briefingContext.scenarioType] && (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
+                {scenarioLabel[briefingContext.scenarioType]}
+              </span>
+            )}
+            {hasBriefing && (
+              <button
+                type="button"
+                onClick={() => setBriefingOpen((o) => !o)}
+                className="rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-50"
+              >
+                {briefingOpen ? 'Fechar briefing ↑' : 'Ver briefing ↓'}
+              </button>
+            )}
+          </div>
+
+          {!sessionEnded && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleEndSession('abandoned')}
+                className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-50"
+              >
+                Abandonar
+              </button>
+              <button
+                onClick={() => handleEndSession('completed')}
+                className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white hover:bg-neutral-700"
+              >
+                Encerrar e avaliar
+              </button>
+            </div>
+          )}
+
+          {sessionEnded && (
+            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600">
+              Sessão encerrada
+            </span>
+          )}
         </div>
 
-        {!sessionEnded && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleEndSession('abandoned')}
-              className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-50"
-            >
-              Abandonar
-            </button>
-            <button
-              onClick={() => handleEndSession('completed')}
-              className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white hover:bg-neutral-700"
-            >
-              Encerrar e avaliar
-            </button>
+        {/* Painel de briefing colapsável */}
+        {hasBriefing && briefingOpen && (
+          <div className="grid gap-3 border-t border-neutral-100 bg-neutral-50 px-4 py-3 sm:grid-cols-3">
+            {briefingContext?.visibleBriefing && (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Contexto
+                </p>
+                <p className="text-xs leading-relaxed text-neutral-600">
+                  {briefingContext.visibleBriefing}
+                </p>
+              </div>
+            )}
+            {briefingContext?.visitObjective && (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Objetivo
+                </p>
+                <p className="text-xs leading-relaxed text-neutral-600">
+                  {briefingContext.visitObjective}
+                </p>
+              </div>
+            )}
+            {briefingContext?.successCriteria && (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Sucesso
+                </p>
+                <p className="text-xs leading-relaxed text-neutral-600">
+                  {briefingContext.successCriteria}
+                </p>
+              </div>
+            )}
           </div>
-        )}
-
-        {sessionEnded && (
-          <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600">
-            Sessão encerrada
-          </span>
         )}
       </div>
 

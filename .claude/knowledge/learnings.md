@@ -122,10 +122,75 @@ Revisão completa identificou 11 problemas. Os mais críticos implementados nest
 
 ### Pendente
 
-- Verificar se `after()` na Route Handler funciona em produção (Vercel) — não testado ainda.
+- ~~Verificar se `after()` na Route Handler funciona em produção (Vercel)~~ — confirmado funcionando. ✓
 - ~~Migrations 0009 e 0010~~ — aplicadas. ✓
 - Indicador de prompt desatualizado no `StepPromptPreview`.
 - Radar chart no FeedbackCard (atualmente barras de progresso).
+
+---
+
+## 2026-05-25 — Avaliador funcionando + simplificação do profile builder
+
+**Categoria:** Bug | UI | Banco
+
+### Avaliador: 3 bugs corrigidos em cadeia
+
+1. **`fetch` sem cookies → redirect para login**: `endSession` chamava `fetch('/api/evaluate-session')` sem repassar os cookies da sessão. O middleware interceptava, não encontrava usuário autenticado e redirecionava para `/login?redirect=/api/evaluate-session`. A avaliação nunca chegava a rodar. Fix: repassar o header `Cookie` da request original no fetch interno (`h.get('cookie')`).
+
+2. **`BehaviorScore.min(1)` rejeitava score 0 do LLM**: quando o vendedor não demonstrava algum comportamento, o modelo retornava `0`, mas o schema Zod tinha `.min(1)`. `generateObject` falhava após 3 tentativas e o erro era capturado silenciosamente pelo `after()`. Fix: alterar para `.min(0)`.
+
+3. **Constraint do banco desatualizada**: `session_feedback.overall_score` tinha `check (overall_score between 1 and 10)` — schema do n8n legado. O novo avaliador gera 0–200. Fix: migration `0011_overall_score_range.sql`.
+
+Padrão crítico aprendido: **erros dentro de `after()` são silenciosos** — só aparecem nos logs do servidor. Diagnóstico é sempre pelos logs (Vercel Functions), não pela UI.
+
+### Admin sessions: FeedbackPoller adicionado
+
+`/admin/sessions/[id]` era server-rendered sem polling. Se o feedback não existia no momento do load, mostrava "Avaliação em processamento..." e nunca atualizava. Agora usa o mesmo `FeedbackPoller` do seller.
+
+### Profile builder: quick-create inline
+
+Empresa e cliente agora podem ser criados diretamente do formulário de perfil via Dialog (`QuickCreateDialog`). Antes era necessário sair para `/admin/companies/new` e `/admin/customers/new`. Hierarquia das tabelas preservada.
+
+Campos avançados em ambos os steps movidos para `<details>` accordion — reduz o ruído visual sem remover funcionalidade.
+
+Novo componente: `components/profiles/QuickCreateDialog.tsx` — genérico, recebe `fields`, `action` e `onSuccess`.
+
+Novos schemas: `QuickCompanySchema`, `QuickCustomerSchema` em `lib/schemas/scenario-entities.ts`.
+
+Novas actions: `createCompanyQuick`, `createCustomerQuick` em `lib/actions/scenario-entities.ts` — retornam `{ id, name }` sem redirect.
+
+---
+
+## 2026-05-24 — Gerador automático de personas
+
+**Categoria:** IA | UI | Arquitetura
+
+### O que foi feito
+
+Implementado um gerador de personas end-to-end acionado por um botão "Gerar persona" no `ProfileFormLayout`. O admin descreve o cenário em linguagem livre + escolhe tipo de cenário e dificuldade, e a IA gera todos os ~25 campos do perfil de uma vez.
+
+### Decisões e por quê
+
+1. **`generateObject()` em vez de `generateText()` + parsing**: o mesmo motivo do evaluator — saída estruturada garantida pelo SDK, sem regex frágil.
+
+2. **Empresa e cliente criados no banco automaticamente**: usamos `createCompanyQuick` + `createCustomerQuick` em paralelo (`Promise.all`). Os campos ricos gerados pela IA (market_situation, pain_points, etc.) ficam apenas no formulário/perfil, não nos registros de empresa/cliente — aceitável porque o perfil é a fonte de verdade para a simulação.
+
+3. **`localCompanies` / `localCustomers` em estado local no ProfileFormLayout**: as listas vinham como props imutáveis do servidor. Para adicionar empresa/cliente recém-criados ao dropdown sem fazer `router.refresh()` (que resetaria o formulário), convertemos as props em `useState` e fazemos append via callback `onSuccess`. Padrão reusável para qualquer fluxo que cria entidades inline.
+
+4. **Modelo `suggestion` (gpt-4o-mini) para geração**: custo baixo, suficiente para preencher campos descritivos. Se a qualidade dos campos precisar melhorar, basta alterar `OPENROUTER_SUGGEST_MODEL`.
+
+5. **Dialog reseta estado ao fechar**: `useEffect` com `[open]` — mesmo padrão do `QuickCreateDialog`.
+
+### Arquivos criados/modificados
+
+- **Novo:** `app/api/ai/generate-persona/route.ts` — route handler POST com `generateObject()` e schema Zod completo
+- **Novo:** `components/profiles/GeneratePersonaDialog.tsx` — dialog com 3 inputs, estados `idle → generating → creating → done/error`, exporta tipo `GenerateResult`
+- **Modificado:** `components/profiles/ProfileFormLayout.tsx` — `localCompanies`/`localCustomers` em estado, botão "Gerar persona", `handleGenerateSuccess` que popula ~25 campos via `form.setValue`
+
+### Pendente
+
+- ~~Typecheck: confirmado limpo (`tsc --noEmit` sem erros).~~ ✓
+- Testar o fluxo completo em desenvolvimento (criar persona → revisar campos → salvar → verificar system_prompt compilado).
 
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--

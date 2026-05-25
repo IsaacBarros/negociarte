@@ -38,3 +38,18 @@ export const ScenarioCustomerSchema = z.object({
 
 export type ScenarioCompanyInput = z.infer<typeof ScenarioCompanySchema>
 export type ScenarioCustomerInput = z.infer<typeof ScenarioCustomerSchema>
+
+export const QuickCompanySchema = z.object({
+  name: z.string().min(2, 'Nome é obrigatório').max(100),
+  industry: optionalText(200),
+  company_size: optionalText(200),
+})
+
+export const QuickCustomerSchema = z.object({
+  name: z.string().min(2, 'Nome é obrigatório').max(100),
+  buyer_role: optionalText(200),
+  description: optionalText(500),
+})
+
+export type QuickCompanyInput = z.infer<typeof QuickCompanySchema>
+export type QuickCustomerInput = z.infer<typeof QuickCustomerSchema>

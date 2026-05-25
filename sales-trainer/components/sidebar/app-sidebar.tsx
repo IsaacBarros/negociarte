@@ -30,7 +30,10 @@ export function AppSidebar({ profile }: { profile: Profile }) {
         { href: '/admin/sessions', label: 'Sessões' },
         { href: '/admin/analytics', label: 'Analytics' },
       ]
-    : [{ href: '/train', label: 'Treinar' }]
+    : [
+        { href: '/train', label: 'Treinar' },
+        { href: '/train/history', label: 'Meu progresso' },
+      ]
 
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-neutral-200 bg-white">

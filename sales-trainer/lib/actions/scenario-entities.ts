@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import {
   ScenarioCompanySchema,
   ScenarioCustomerSchema,
+  QuickCompanySchema,
+  QuickCustomerSchema,
 } from '@/lib/schemas/scenario-entities'
 import type { Database } from '@/types/database'
 
@@ -69,6 +71,52 @@ export async function createScenarioCustomer(rawInput: unknown) {
   revalidatePath('/admin/customers')
   revalidatePath('/admin/profiles/new')
   redirect('/admin/customers')
+}
+
+export async function createCompanyQuick(rawInput: unknown) {
+  const user = await requireAdmin()
+  const input = QuickCompanySchema.parse(rawInput)
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('scenario_companies')
+    .insert({
+      organization_id: user.organization_id,
+      created_by: user.id,
+      name: input.name,
+      industry: toNullable(input.industry),
+      company_size: toNullable(input.company_size),
+      is_active: true,
+    })
+    .select('id, name')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? 'Erro ao criar empresa')
+  revalidatePath('/admin/companies')
+  return data
+}
+
+export async function createCustomerQuick(rawInput: unknown) {
+  const user = await requireAdmin()
+  const input = QuickCustomerSchema.parse(rawInput)
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('scenario_customers')
+    .insert({
+      organization_id: user.organization_id,
+      created_by: user.id,
+      name: input.name,
+      buyer_role: toNullable(input.buyer_role),
+      description: toNullable(input.description),
+      is_active: true,
+    })
+    .select('id, name')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? 'Erro ao criar cliente')
+  revalidatePath('/admin/customers')
+  return data
 }
 
 export async function updateScenarioCompany(id: string, rawInput: unknown) {

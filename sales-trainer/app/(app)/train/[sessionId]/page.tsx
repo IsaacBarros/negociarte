@@ -34,13 +34,21 @@ export default async function SessionPage({
 
   const { data: profileRaw } = await supabase
     .from('customer_profiles')
-    .select('id, name')
+    .select('id, name, buyer_role, visible_briefing, visit_objective, success_criteria, scenario_type')
     .eq('id', session.customer_profile_id)
     .single()
 
   if (!profileRaw) notFound()
 
-  const profile = profileRaw as { id: string; name: string }
+  const profile = profileRaw as {
+    id: string
+    name: string
+    buyer_role: string | null
+    visible_briefing: string | null
+    visit_objective: string | null
+    success_criteria: string | null
+    scenario_type: string | null
+  }
 
   const { data: dbMessages } = await supabase
     .from('messages')
@@ -82,6 +90,13 @@ export default async function SessionPage({
         profileName={profile.name}
         initialMessages={initialMessages}
         sessionEnded={isEnded}
+        briefingContext={{
+          buyerRole: profile.buyer_role,
+          visibleBriefing: profile.visible_briefing,
+          visitObjective: profile.visit_objective,
+          successCriteria: profile.success_criteria,
+          scenarioType: profile.scenario_type,
+        }}
       />
       {isEnded && (
         <div className="absolute bottom-0 right-0 top-14 w-80 overflow-y-auto border-l border-neutral-200 bg-white p-4">

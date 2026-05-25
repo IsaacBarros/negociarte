@@ -24,13 +24,13 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
   const [{ data: companies }, { data: customers }, { data: behaviorStyles }] = await Promise.all([
     supabase
       .from('scenario_companies')
-      .select('id, name, description, industry, company_size, product_context, market_situation, competition_context, marketing_strategy')
+      .select('id, name, description, industry, company_size, product_context, market_situation, competition_context, marketing_strategy, updated_at')
       .eq('organization_id', user.organization_id)
       .eq('is_active', true)
       .order('name'),
     supabase
       .from('scenario_customers')
-      .select('id, name, description, buyer_role, pain_points, objections, budget_context, decision_authority, personality_traits, communication_style, confidential_context')
+      .select('id, name, description, buyer_role, pain_points, objections, budget_context, decision_authority, personality_traits, communication_style, confidential_context, updated_at')
       .eq('organization_id', user.organization_id)
       .eq('is_active', true)
       .order('name'),
