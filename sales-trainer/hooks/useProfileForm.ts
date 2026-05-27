@@ -7,6 +7,7 @@ import {
   CustomerProfileSchema,
   type CustomerProfileInput,
 } from '@/lib/schemas/profile'
+import type { SessionObjective } from '@/lib/schemas/session'
 import { draftKeyFor, useProfileAutoSave } from '@/hooks/useProfileAutoSave'
 import type { Database } from '@/types/database'
 
@@ -98,6 +99,7 @@ function defaultsFrom(
     behavior_style_id: initialData?.behavior_style_id ?? draft.behavior_style_id,
     chat_model: initialData?.chat_model ?? draft.chat_model ?? null,
     is_active: initialData?.is_active ?? draft.is_active ?? true,
+    available_objectives: (initialData?.available_objectives as SessionObjective[] | null) ?? draft.available_objectives ?? null,
   }
 }
 

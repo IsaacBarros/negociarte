@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ChatWindow } from '@/components/chat/chat-window'
 import { FeedbackCard } from '@/components/chat/feedback-card'
 import { FeedbackPoller } from '@/components/chat/feedback-poller'
+import { PostSessionActions } from '@/components/chat/PostSessionActions'
 import type { UIMessage } from 'ai'
 import type { Metadata } from 'next'
 import type { Database } from '@/types/database'
@@ -23,14 +24,19 @@ export default async function SessionPage({
 
   const { data: sessionRaw } = await supabase
     .from('training_sessions')
-    .select('id, status, customer_profile_id')
+    .select('id, status, customer_profile_id, difficulty_level')
     .eq('id', sessionId)
     .eq('seller_id', user.id)
     .single()
 
   if (!sessionRaw) notFound()
 
-  const session = sessionRaw as { id: string; status: string; customer_profile_id: string }
+  const session = sessionRaw as {
+    id: string
+    status: string
+    customer_profile_id: string
+    difficulty_level: string | null
+  }
 
   const { data: profileRaw } = await supabase
     .from('customer_profiles')
@@ -101,9 +107,19 @@ export default async function SessionPage({
       {isEnded && (
         <div className="absolute bottom-0 right-0 top-14 w-80 overflow-y-auto border-l border-neutral-200 bg-white p-4">
           {feedback ? (
-            <FeedbackCard feedback={feedback} />
+            <div className="space-y-6">
+              <FeedbackCard feedback={feedback} />
+              <PostSessionActions
+                customerProfileId={session.customer_profile_id}
+                lastDifficultyLevel={session.difficulty_level}
+              />
+            </div>
           ) : (
-            <FeedbackPoller sessionId={sessionId} />
+            <FeedbackPoller
+              sessionId={sessionId}
+              customerProfileId={session.customer_profile_id}
+              lastDifficultyLevel={session.difficulty_level}
+            />
           )}
         </div>
       )}

@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   const { data: sessionRaw, error: sessionError } = await supabase
     .from('training_sessions')
-    .select('id, seller_id, status, customer_profile_id, behavior_style_id, difficulty_level')
+    .select('id, seller_id, status, customer_profile_id, behavior_style_id, difficulty_level, chosen_objective')
     .eq('id', session_id)
     .eq('seller_id', user.id)
     .eq('status', 'active')
@@ -72,19 +72,67 @@ export async function POST(request: Request) {
     customer_profile_id: string
     behavior_style_id: string | null
     difficulty_level: 'easy' | 'medium' | 'hard' | null
+    chosen_objective: string | null
   }
 
   const { data: profileRaw } = await supabase
     .from('customer_profiles')
-    .select('system_prompt, chat_model')
+    .select('system_prompt, chat_model, company_id, customer_id')
     .eq('id', session.customer_profile_id)
     .single()
 
-  const profile = profileRaw as { system_prompt: string; chat_model: string | null } | null
+  const profile = profileRaw as { system_prompt: string; chat_model: string | null; company_id: string | null; customer_id: string | null } | null
   const systemPrompt = profile?.system_prompt
   if (!systemPrompt) {
     return new Response('Perfil não encontrado.', { status: 404 })
   }
+
+  // Base de conhecimento da empresa — injetada em runtime (sempre atualizada)
+  let knowledgePrompt = ''
+  if (profile.company_id) {
+    const { data: knowledgeDocs } = await supabase
+      .from('company_knowledge_docs')
+      .select('title, extracted_text')
+      .eq('company_id', profile.company_id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+
+    if (knowledgeDocs?.length) {
+      const knowledgeBody = knowledgeDocs
+        .filter((d) => d.extracted_text)
+        .map((d) => `--- ${d.title} ---\n${d.extracted_text ?? ''}`)
+        .join('\n\n')
+      if (knowledgeBody) {
+        knowledgePrompt = `\n\n== BASE DE CONHECIMENTO DA EMPRESA ==\nUse as informações abaixo para enriquecer suas respostas quando relevante. Não cite explicitamente este bloco para o participante.\n\n${knowledgeBody}`
+      }
+    }
+  }
+
+  // Histórico de relacionamento do seller com este cliente — injetado em runtime
+  let historyPrompt = ''
+  if (profile.customer_id) {
+    const { data: historyRaw } = await supabase
+      .from('seller_customer_history')
+      .select('history_text')
+      .eq('seller_id', user.id)
+      .eq('customer_id', profile.customer_id)
+      .maybeSingle()
+    if (historyRaw?.history_text) {
+      historyPrompt = `\n\n== HISTÓRICO DE RELACIONAMENTO DO VENDEDOR COM ESTE CLIENTE ==\n${historyRaw.history_text}\nConsidere este histórico para dar continuidade ao relacionamento de forma coerente.`
+    }
+  }
+
+  // Objetivo escolhido pelo seller na criação da sessão
+  const objectiveLabels: Record<string, string> = {
+    conquistar: 'Conquistar este cliente (primeiro negócio)',
+    aumentar_vendas: 'Aumentar o volume de vendas com este cliente',
+    melhorar_relacionamento: 'Melhorar o relacionamento e a confiança',
+    reconquistar: 'Reconquistar um cliente perdido ou inativo',
+    outro: 'Objetivo não especificado pelo vendedor',
+  }
+  const objectivePrompt = session.chosen_objective
+    ? `\n\n== OBJETIVO DECLARADO PELO PARTICIPANTE ==\nO vendedor está visitando com o seguinte objetivo: ${objectiveLabels[session.chosen_objective] ?? session.chosen_objective}. Use isso para calibrar o que revelará ao longo da conversa e como reagirá às abordagens.`
+    : ''
 
   let behaviorPrompt = ''
   if (session.behavior_style_id) {
@@ -143,7 +191,7 @@ export async function POST(request: Request) {
 
   const streamResult = streamText({
     model: openrouter(model),
-    system: `${systemPrompt}${behaviorPrompt}${difficultyPrompt}`,
+    system: `${systemPrompt}${knowledgePrompt}${historyPrompt}${behaviorPrompt}${difficultyPrompt}${objectivePrompt}`,
     messages: modelMessages,
     maxOutputTokens: 1000,
     onFinish: async ({ text, usage }) => {

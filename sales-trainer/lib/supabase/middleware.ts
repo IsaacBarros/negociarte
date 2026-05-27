@@ -7,7 +7,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Rotas públicas que não exigem autenticação nem refresh de sessão.
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/api/auth/', '/api/webhooks/']
+  const publicRoutes = ['/login', '/signup', '/auth/callback', '/api/auth/', '/api/webhooks/', '/join/']
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
 
   if (isPublicRoute) {

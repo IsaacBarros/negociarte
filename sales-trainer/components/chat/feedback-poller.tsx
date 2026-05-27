@@ -3,18 +3,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FeedbackCard } from './feedback-card'
+import { PostSessionActions } from './PostSessionActions'
 import type { Database } from '@/types/database'
 
 type Feedback = Database['public']['Tables']['session_feedback']['Row']
 
 interface Props {
   sessionId: string
+  /** When provided, shows PostSessionActions below FeedbackCard once feedback arrives */
+  customerProfileId?: string
+  lastDifficultyLevel?: string | null
 }
 
 const POLL_INTERVAL_MS = 5000
 const MAX_WAIT_MS = 120_000
 
-export function FeedbackPoller({ sessionId }: Props) {
+export function FeedbackPoller({ sessionId, customerProfileId, lastDifficultyLevel }: Props) {
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [timedOut, setTimedOut] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -70,5 +74,15 @@ export function FeedbackPoller({ sessionId }: Props) {
     )
   }
 
-  return <FeedbackCard feedback={feedback} />
+  return (
+    <div className="space-y-6">
+      <FeedbackCard feedback={feedback} />
+      {customerProfileId && (
+        <PostSessionActions
+          customerProfileId={customerProfileId}
+          lastDifficultyLevel={lastDifficultyLevel ?? null}
+        />
+      )}
+    </div>
+  )
 }

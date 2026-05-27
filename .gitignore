@@ -2,3 +2,7 @@ node_modules/
 .antigravitycli/
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# macOS
+.DS_Store
+**/.DS_Store

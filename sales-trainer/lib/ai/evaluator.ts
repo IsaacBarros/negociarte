@@ -8,6 +8,21 @@ import type { Database } from '@/types/database'
 type TrainingSession = Database['public']['Tables']['training_sessions']['Row']
 type Message = { role: 'user' | 'assistant'; content: string }
 
+// ── Custom (dynamic) criteria types ──────────────────────────────────────────
+
+export interface CustomCriteriaStage {
+  key: string
+  label: string
+  behaviors: Array<{ key: string; label: string; weight: number }>
+}
+
+export interface CustomCriteria {
+  stages: CustomCriteriaStage[]
+  total_points: number
+}
+
+// ── Hardcoded fallback schema ─────────────────────────────────────────────────
+
 const BehaviorScore = z.object({
   score: z.number().int().min(0).max(5),
   evidence: z.string(),
@@ -41,16 +56,84 @@ const StageScoresSchema = z.object({
 
 export type StageScores = z.infer<typeof StageScoresSchema>
 
-export const EvaluationSchema = z.object({
+const EvaluationBaseSchema = z.object({
   strengths: z.string(),
   improvements: z.string(),
   techniques_used: z.array(z.string()),
   techniques_missed: z.array(z.string()),
-  stage_scores: StageScoresSchema,
   outcome: z.enum(['accepted', 'advanced', 'refused', 'inconclusive']),
 })
 
-export type EvaluationResult = z.infer<typeof EvaluationSchema> & { overall_score: number }
+const EvaluationSchema = EvaluationBaseSchema.extend({ stage_scores: StageScoresSchema })
+
+// ── Default stages config — mirrors the hardcoded schema above ────────────────
+
+export const DEFAULT_STAGES_CONFIG: CustomCriteriaStage[] = [
+  {
+    key: 'planejamento',
+    label: 'Planejamento',
+    behaviors: [
+      { key: 'preparacao_apresentacao', label: 'Preparado para a apresentação', weight: 20 },
+      { key: 'estrategia_abordagem', label: 'Estratégia de abordagem', weight: 10 },
+    ],
+  },
+  {
+    key: 'abertura',
+    label: 'Abertura',
+    behaviors: [
+      { key: 'proposito_visita', label: 'Propósito da visita comunicado', weight: 10 },
+      { key: 'adaptacao_estilo', label: 'Adaptação ao estilo do cliente', weight: 20 },
+    ],
+  },
+  {
+    key: 'entendimento_necessidades',
+    label: 'Entendimento das necessidades',
+    behaviors: [
+      { key: 'perguntas_diagnostico', label: 'Perguntas de diagnóstico', weight: 20 },
+      { key: 'escuta_ativa', label: 'Escuta ativa', weight: 20 },
+    ],
+  },
+  {
+    key: 'argumentacao',
+    label: 'Argumentação',
+    behaviors: [
+      { key: 'solucoes_necessidades', label: 'Soluções às necessidades', weight: 20 },
+      { key: 'mensagem_clara', label: 'Mensagem clara e objetiva', weight: 20 },
+      { key: 'beneficios_proposta', label: 'Benefícios da proposta', weight: 20 },
+    ],
+  },
+  {
+    key: 'objecoes',
+    label: 'Objeções',
+    behaviors: [{ key: 'contorno_objecoes', label: 'Contorno de objeções', weight: 20 }],
+  },
+  {
+    key: 'encerramento',
+    label: 'Encerramento',
+    behaviors: [{ key: 'conclusao_visita', label: 'Conclusão da visita', weight: 20 }],
+  },
+]
+
+// ── Public result type ────────────────────────────────────────────────────────
+
+export interface EvaluationResult {
+  strengths: string
+  improvements: string
+  techniques_used: string[]
+  techniques_missed: string[]
+  /** Generic map — keys depend on the criteria used (hardcoded or custom) */
+  stage_scores: Record<string, Record<string, { score: number; evidence: string }>>
+  outcome: 'accepted' | 'advanced' | 'refused' | 'inconclusive'
+  overall_score: number
+  /**
+   * Stages config used for this evaluation.
+   * Stored in raw_evaluation so FeedbackCard can render labels/weights without
+   * knowing which criteria were active at evaluation time.
+   */
+  stages_config: CustomCriteriaStage[]
+}
+
+// ── Scoring helpers ───────────────────────────────────────────────────────────
 
 const BEHAVIOR_WEIGHTS = {
   planejamento: { preparacao_apresentacao: 20, estrategia_abordagem: 10 },
@@ -79,6 +162,36 @@ function computeTotalScore(s: StageScores): number {
   )
 }
 
+function buildDynamicEvaluationSchema(stages: CustomCriteriaStage[]) {
+  const stageObj: Record<string, z.ZodTypeAny> = {}
+  for (const stage of stages) {
+    const behaviorObj: Record<string, z.ZodTypeAny> = {}
+    for (const behavior of stage.behaviors) {
+      behaviorObj[behavior.key] = BehaviorScore
+    }
+    stageObj[stage.key] = z.object(behaviorObj)
+  }
+  return EvaluationBaseSchema.extend({ stage_scores: z.object(stageObj) })
+}
+
+function computeDynamicScore(
+  stageScores: Record<string, Record<string, { score: number }>>,
+  stages: CustomCriteriaStage[],
+): number {
+  let total = 0
+  for (const stage of stages) {
+    const stageData = stageScores[stage.key]
+    if (!stageData) continue
+    for (const behavior of stage.behaviors) {
+      const entry = stageData[behavior.key]
+      if (entry) total += entry.score * (behavior.weight / 5)
+    }
+  }
+  return Math.round(total)
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
 interface EvaluateSessionOptions {
   session: TrainingSession & {
     customer_profiles: {
@@ -98,12 +211,15 @@ interface EvaluateSessionOptions {
   }
   messages: Message[]
   durationMinutes?: number | null
+  /** If provided, overrides the hardcoded evaluation schema */
+  customCriteria?: CustomCriteria | null
 }
 
 export async function evaluateSession({
   session,
   messages,
   durationMinutes,
+  customCriteria,
 }: EvaluateSessionOptions): Promise<EvaluationResult> {
   const profile = session.customer_profiles
   const behaviorStyle = session.behavior_styles
@@ -122,15 +238,52 @@ export async function evaluateSession({
     messageCount: messages.length,
     durationMinutes: durationMinutes ?? null,
     messages,
+    customCriteria: customCriteria ?? null,
   })
 
+  const modelId = modelFor('evaluation')
+
+  // ── Dynamic path — custom criteria from DB ────────────────────────────────
+  if (customCriteria) {
+    const schema = buildDynamicEvaluationSchema(customCriteria.stages)
+    const { object } = await generateObject({
+      model: openrouter(modelId),
+      schema,
+      prompt,
+      maxOutputTokens: 2000,
+      temperature: 0.2,
+    })
+    // generateObject infers return type from dynamic schema; cast to concrete shape
+    const obj = object as unknown as {
+      strengths: string
+      improvements: string
+      techniques_used: string[]
+      techniques_missed: string[]
+      stage_scores: Record<string, Record<string, { score: number; evidence: string }>>
+      outcome: 'accepted' | 'advanced' | 'refused' | 'inconclusive'
+    }
+    return {
+      ...obj,
+      overall_score: computeDynamicScore(obj.stage_scores, customCriteria.stages),
+      stages_config: customCriteria.stages,
+    }
+  }
+
+  // ── Hardcoded fallback path ───────────────────────────────────────────────
   const { object } = await generateObject({
-    model: openrouter(modelFor('evaluation')),
+    model: openrouter(modelId),
     schema: EvaluationSchema,
     prompt,
     maxOutputTokens: 2000,
     temperature: 0.2,
   })
-
-  return { ...object, overall_score: computeTotalScore(object.stage_scores) }
+  return {
+    ...object,
+    stage_scores: object.stage_scores as unknown as Record<
+      string,
+      Record<string, { score: number; evidence: string }>
+    >,
+    overall_score: computeTotalScore(object.stage_scores),
+    stages_config: DEFAULT_STAGES_CONFIG,
+  }
 }

@@ -49,6 +49,10 @@ export const QuickCustomerSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório').max(100),
   buyer_role: optionalText(200),
   description: optionalText(500),
+  pain_points: optionalText(2000),
+  objections: optionalText(2000),
+  budget_context: optionalText(500),
+  communication_style: optionalText(500),
 })
 
 export type QuickCompanyInput = z.infer<typeof QuickCompanySchema>

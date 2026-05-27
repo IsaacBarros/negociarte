@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
-import { CustomerProfileSchema } from '@/lib/schemas/profile'
+import { CustomerProfileSchema, BulkProfileSchema } from '@/lib/schemas/profile'
 import { compileSystemPrompt } from '@/lib/ai/profile-compiler'
 import type { Database } from '@/types/database'
 
@@ -106,6 +106,7 @@ export async function createProfile(rawInput: unknown) {
     behavior_style_id: toNullable(input.behavior_style_id),
     chat_model: toNullable(input.chat_model),
     is_active: input.is_active ?? true,
+    available_objectives: input.available_objectives ?? null,
     system_prompt: '',
   }
 
@@ -181,6 +182,7 @@ export async function updateProfile(id: string, rawInput: unknown) {
     behavior_style_id: toNullable(input.behavior_style_id),
     chat_model: toNullable(input.chat_model),
     is_active: input.is_active ?? true,
+    available_objectives: input.available_objectives ?? null,
   }
 
   const merged = { ...existing, ...updateData }
@@ -209,5 +211,43 @@ export async function toggleProfileActive(id: string, isActive: boolean) {
 
   if (error) throw new Error(error.message)
 
+  revalidatePath('/admin/profiles')
+}
+
+export async function archiveProfilesAsAdmin(rawInput: unknown) {
+  const { profile_ids } = BulkProfileSchema.parse(rawInput)
+  const user = await requireAdmin()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('customer_profiles')
+    .update({ is_active: false })
+    .in('id', profile_ids)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/profiles')
+}
+
+export async function deleteProfilesAsAdmin(rawInput: unknown) {
+  const { profile_ids } = BulkProfileSchema.parse(rawInput)
+  const user = await requireAdmin()
+  const supabase = await createClient()
+
+  // Deleta sessões vinculadas primeiro (cascadeia messages + session_feedback)
+  await supabase
+    .from('training_sessions')
+    .delete()
+    .in('customer_profile_id', profile_ids)
+    .eq('organization_id', user.organization_id)
+
+  // Deleta os perfis
+  const { error } = await supabase
+    .from('customer_profiles')
+    .delete()
+    .in('id', profile_ids)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error(error.message)
   revalidatePath('/admin/profiles')
 }

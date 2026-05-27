@@ -1,21 +1,9 @@
-import Link from 'next/link'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
+import { SessionsTable } from '@/components/admin/SessionsTable'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Sessões — Negociarte' }
-
-const statusLabel: Record<string, string> = {
-  active: 'Em andamento',
-  completed: 'Concluída',
-  abandoned: 'Abandonada',
-}
-
-const statusColor: Record<string, string> = {
-  active: 'text-green-600',
-  completed: 'text-neutral-600',
-  abandoned: 'text-neutral-400',
-}
 
 export default async function AdminSessionsPage({
   searchParams,
@@ -68,20 +56,7 @@ export default async function AdminSessionsPage({
         .in('session_id', sessions.length ? sessions.map((s) => s.id) : ['none']),
     ])
 
-  const sellersMap = new Map(
-    (sellersData as { id: string; full_name: string | null; email: string }[] ?? []).map((s) => [s.id, s]),
-  )
-  const profilesMap = new Map(
-    (profilesData as { id: string; name: string }[] ?? []).map((p) => [p.id, p]),
-  )
-  const feedbackMap = new Map(
-    (feedbackData as { session_id: string; overall_score: number | null }[] ?? []).map((f) => [
-      f.session_id,
-      f.overall_score,
-    ]),
-  )
-
-  const allSellers = sellersData as { id: string; full_name: string | null; email: string }[] ?? []
+  const allSellers = (sellersData as { id: string; full_name: string | null; email: string }[] ?? [])
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
@@ -121,60 +96,12 @@ export default async function AdminSessionsPage({
         </button>
       </form>
 
-      {!sessions.length && (
-        <div className="rounded-lg border border-dashed border-neutral-200 px-6 py-16 text-center">
-          <p className="text-sm text-neutral-500">Nenhuma sessão encontrada.</p>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {sessions.map((s) => {
-          const seller2 = sellersMap.get(s.seller_id)
-          const profile = profilesMap.get(s.customer_profile_id)
-          const score = feedbackMap.get(s.id)
-
-          return (
-            <Link
-              key={s.id}
-              href={`/admin/sessions/${s.id}`}
-              className="flex items-center gap-4 rounded-lg border border-neutral-200 px-4 py-3 hover:bg-neutral-50"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{s.title ?? profile?.name ?? '—'}</p>
-                  <span className={`text-xs ${statusColor[s.status] ?? ''}`}>
-                    {statusLabel[s.status] ?? s.status}
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-400">
-                  {seller2?.full_name ?? seller2?.email ?? '—'} ·{' '}
-                  {new Date(s.started_at).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 shrink-0 text-right">
-                {score !== undefined && score !== null && (
-                  <div>
-                    <p className="text-xs text-neutral-400">Nota</p>
-                    <p className="text-sm font-semibold">{score}/10</p>
-                  </div>
-                )}
-                {s.total_tokens > 0 && (
-                  <div>
-                    <p className="text-xs text-neutral-400">Tokens</p>
-                    <p className="text-sm">{s.total_tokens.toLocaleString()}</p>
-                  </div>
-                )}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      <SessionsTable
+        sessions={sessions}
+        sellers={allSellers}
+        profiles={(profilesData ?? []) as { id: string; name: string }[]}
+        feedbacks={(feedbackData ?? []) as { session_id: string; overall_score: number | null }[]}
+      />
     </div>
   )
 }

@@ -5,30 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAuth, requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
-import { CreateSessionSchema, UpdateSessionStatusSchema } from '@/lib/schemas/session'
+import { CreateSessionSchema, UpdateSessionStatusSchema, UpdateObjectiveSchema, DeleteSessionsSchema } from '@/lib/schemas/session'
 
-export async function createSession(rawInput: unknown, formData?: FormData) {
+export async function createSession(rawInput: unknown) {
   const user = await requireAuth()
-  const mergedInput =
-    formData && formData.get('difficulty_level')
-      ? {
-          ...(rawInput as Record<string, unknown>),
-          difficulty_level: formData.get('difficulty_level'),
-        }
-      : rawInput
-  const { customer_profile_id, difficulty_level } = CreateSessionSchema.parse(mergedInput)
+  const { customer_profile_id, difficulty_level, chosen_objective } =
+    CreateSessionSchema.parse(rawInput)
 
   const supabase = await createClient()
-
-  const { count: activeCount } = await supabase
-    .from('training_sessions')
-    .select('id', { count: 'exact', head: true })
-    .eq('seller_id', user.id)
-    .eq('status', 'active')
-
-  if ((activeCount ?? 0) > 0) {
-    throw new Error('Você já tem uma sessão em andamento. Encerre-a antes de iniciar outra.')
-  }
 
   const { data: profileRaw, error: profileError } = await supabase
     .from('customer_profiles')
@@ -48,8 +32,13 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
     difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
     behavior_style_id: string | null
   }
-  const sessionDifficulty =
-    profile.difficulty_level === 'trainee_choice' ? difficulty_level ?? 'medium' : null
+
+  // Usa a dificuldade escolhida pelo seller; fallback para o padrão do perfil
+  const sessionDifficulty: 'easy' | 'medium' | 'hard' =
+    difficulty_level ??
+    (profile.difficulty_level !== 'trainee_choice' && profile.difficulty_level
+      ? profile.difficulty_level
+      : 'medium')
 
   // Usa o estilo fixo do perfil ou sorteia aleatoriamente
   let behaviorStyleId = profile.behavior_style_id
@@ -76,6 +65,7 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
       title: `Treino com ${profile.name}`,
       behavior_style_id: behaviorStyleId,
       difficulty_level: sessionDifficulty,
+      chosen_objective: chosen_objective ?? null,
     })
     .select('id')
     .single()
@@ -83,7 +73,24 @@ export async function createSession(rawInput: unknown, formData?: FormData) {
   if (error || !sessionRaw) throw new Error('Erro ao criar sessão.')
 
   const session = sessionRaw as { id: string }
-  redirect(`/train/${session.id}/briefing`)
+  // Vai direto ao chat — objetivo e dificuldade já foram escolhidos na tela anterior
+  redirect(`/train/${session.id}`)
+}
+
+export async function updateSessionObjective(sessionId: string, rawInput: unknown) {
+  const { chosen_objective } = UpdateObjectiveSchema.parse(rawInput)
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('training_sessions')
+    .update({ chosen_objective })
+    .eq('id', sessionId)
+    .eq('seller_id', user.id)
+    .eq('status', 'active')
+
+  if (error) throw new Error('Erro ao salvar objetivo.')
+  revalidatePath(`/train/${sessionId}/briefing`)
 }
 
 export async function endSession(rawInput: unknown) {
@@ -119,6 +126,21 @@ export async function endSession(rawInput: unknown) {
 
   revalidatePath('/train')
   revalidatePath(`/train/${session_id}`)
+}
+
+export async function deleteSessionsAsAdmin(rawInput: unknown) {
+  const { session_ids } = DeleteSessionsSchema.parse(rawInput)
+  const user = await requireAdmin()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('training_sessions')
+    .delete()
+    .in('id', session_ids)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/sessions')
 }
 
 export async function abandonSessionAsAdmin(sessionId: string) {

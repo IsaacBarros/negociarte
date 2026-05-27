@@ -25,11 +25,7 @@ export function AppSidebar({ profile }: { profile: Profile }) {
   const isAdmin = profile.role === 'admin'
 
   const navItems = isAdmin
-    ? [
-        { href: '/train', label: 'Treinar' },
-        { href: '/admin/sessions', label: 'Sessões' },
-        { href: '/admin/analytics', label: 'Analytics' },
-      ]
+    ? [{ href: '/train', label: 'Treinar' }]
     : [
         { href: '/train', label: 'Treinar' },
         { href: '/train/history', label: 'Meu progresso' },
@@ -46,10 +42,10 @@ export function AppSidebar({ profile }: { profile: Profile }) {
       <div className="px-3 py-3">
         {isAdmin ? (
           <Link
-            href="/admin/profiles/new"
+            href="/admin/companies/new"
             className="flex w-full items-center justify-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50"
           >
-            <span>+</span> Novo cenário
+            <span>+</span> Novo projeto
           </Link>
         ) : (
           <Link
@@ -66,20 +62,20 @@ export function AppSidebar({ profile }: { profile: Profile }) {
         {isAdmin && (
           <div className="space-y-0.5">
             <Link
-              href="/admin/profiles"
+              href="/admin/companies"
               className={`flex items-center rounded-md px-3 py-1.5 text-sm ${
-                pathname.startsWith('/admin/profiles')
+                pathname.startsWith('/admin/companies')
                   ? 'bg-neutral-100 font-medium'
                   : 'text-neutral-600 hover:bg-neutral-50'
               }`}
             >
-              Cenários
+              Projetos
             </Link>
             <div className="ml-3 border-l border-neutral-200 pl-2">
               {[
-                { href: '/admin/companies', label: 'Empresas' },
-                { href: '/admin/customers', label: 'Clientes' },
-                { href: '/admin/profiles/new', label: 'Novo cenário' },
+                { href: '/admin/profiles', label: 'Todos os cenários' },
+                { href: '/admin/sessions', label: 'Sessões' },
+                { href: '/admin/analytics', label: 'Analytics' },
               ].map((item) => {
                 const active = pathname.startsWith(item.href)
                 return (

@@ -1,5 +1,11 @@
 type Message = { role: 'user' | 'assistant'; content: string }
 
+interface CustomCriteriaStage {
+  key: string
+  label: string
+  behaviors: Array<{ key: string; label: string; weight: number }>
+}
+
 interface EvaluationContext {
   profileName: string
   difficultyLevel: string | null
@@ -14,68 +20,59 @@ interface EvaluationContext {
   messageCount?: number
   durationMinutes?: number | null
   messages: Message[]
+  /** When set, replaces the hardcoded 6-stage criteria section */
+  customCriteria?: { stages: CustomCriteriaStage[]; total_points: number } | null
 }
 
-export function buildEvaluatorPrompt(ctx: EvaluationContext): string {
-  const {
-    profileName,
-    difficultyLevel,
-    scenarioType,
-    visitObjective,
-    successCriteria,
-    salesProcessContext,
-    salesCompetenciesContext,
-    behaviorStyleName,
-    behaviorStyleDescription,
-    behaviorEvaluationCriteria,
-    messageCount,
-    durationMinutes,
-    messages,
-  } = ctx
+// ── Score scale — shared between hardcoded and dynamic sections ───────────────
 
-  const transcript = messages
-    .map((m) => `[${m.role === 'user' ? 'VENDEDOR' : 'CLIENTE'}]: ${m.content}`)
-    .join('\n\n')
-
-  const scenarioContext = scenarioType
-    ? `Cenário: ${scenarioType === 'discovery' ? 'Discovery' : scenarioType === 'objection_handling' ? 'Tratamento de objeções' : 'Fechamento'}.`
-    : ''
-
-  const difficultyContext = difficultyLevel
-    ? `Dificuldade: ${difficultyLevel === 'easy' ? 'Fácil' : difficultyLevel === 'medium' ? 'Médio' : 'Difícil'}.`
-    : ''
-
-  const volumeContext = [
-    messageCount !== undefined ? `Turnos na conversa: ${messageCount}` : null,
-    durationMinutes !== null && durationMinutes !== undefined ? `Duração: ${durationMinutes} min` : null,
-  ].filter(Boolean).join(' | ')
-
-  return `Você é um coach de vendas especializado da Negociarte. Avalie a performance do vendedor na conversa de treino abaixo seguindo o processo de vendas estruturado em 6 etapas.
-
-PERFIL DO CLIENTE SIMULADO: ${profileName}
-${scenarioContext}
-${difficultyContext}
-${volumeContext ? `Contexto da sessão: ${volumeContext}.` : ''}
-${visitObjective ? `Objetivo da visita: ${visitObjective}.` : ''}
-${successCriteria ? `Critérios de sucesso: ${successCriteria}.` : ''}
-${behaviorStyleName ? `Estilo comportamental do cliente: ${behaviorStyleName}.` : ''}
-${behaviorStyleDescription ? `Descrição do estilo: ${behaviorStyleDescription}.` : ''}
-${behaviorEvaluationCriteria ? `Critérios de adequação ao estilo: ${behaviorEvaluationCriteria}.` : ''}
-${salesProcessContext ? `Processo de vendas esperado: ${salesProcessContext}.` : ''}
-${salesCompetenciesContext ? `Competências esperadas: ${salesCompetenciesContext}.` : ''}
-
-TRANSCRIÇÃO:
-${transcript}
-
-PROCESSO DE AVALIAÇÃO — 6 etapas, score de 0 a 5 por comportamento:
-
-ESCALA DE SCORES:
+const SCORE_SCALE = `ESCALA DE SCORES:
 Score 5 = Excelente — critério plenamente atendido, de forma consistente
 Score 4 = Bom — critério majoritariamente atendido, com pequenas lacunas
 Score 3 = Parcial — critério atendido de forma incompleta ou inconsistente
 Score 2 = Insuficiente — critério raramente demonstrado
 Score 1 = Não demonstrado — situação na conversa permitia, mas o vendedor não aplicou
-Score 0 = Inaplicável — o comportamento não pôde ser avaliado nesta sessão (ex.: não houve objeções para contornar)
+Score 0 = Inaplicável — o comportamento não pôde ser avaliado nesta sessão (ex.: não houve objeções para contornar)`
+
+// ── Dynamic criteria builder ──────────────────────────────────────────────────
+
+function buildDynamicCriteriaSection(stages: CustomCriteriaStage[]): string {
+  const lines: string[] = [
+    `PROCESSO DE AVALIAÇÃO — ${stages.length} etapas, score de 0 a 5 por comportamento:`,
+    '',
+    SCORE_SCALE,
+    '',
+  ]
+  stages.forEach((stage, i) => {
+    lines.push(`${i + 1}. ${stage.label.toUpperCase()}`)
+    stage.behaviors.forEach((b) => {
+      lines.push(`   - ${b.key} (peso ${b.weight}pts): ${b.label}.`)
+      lines.push(
+        `     Score 5 = critério plenamente demonstrado; 3 = parcialmente; 1 = não demonstrado; 0 = inaplicável.`,
+      )
+    })
+    lines.push('')
+  })
+  lines.push(
+    `Para cada comportamento, forneça:`,
+    `- score: inteiro de 0 a 5`,
+    `- evidence: trecho ou observação da conversa que justifica o score (máximo 2 frases em português)`,
+    ``,
+    `Além disso, forneça:`,
+    `- strengths: pontos fortes gerais do vendedor nesta sessão (2-3 frases)`,
+    `- improvements: principais áreas de melhoria prioritárias (2-3 frases)`,
+    `- techniques_used: array com técnicas de vendas utilizadas (ex: ["escuta reflexiva", "perguntas abertas", "ancoragem de benefícios"])`,
+    `- techniques_missed: array com técnicas que poderiam ter sido aplicadas mas não foram`,
+    `- outcome: desfecho da simulação com base na última resposta do cliente — use exatamente um dos valores: "accepted" (cliente aceitou ou comprometeu-se a avançar), "advanced" (cliente quer próximo passo mas sem compromisso final), "refused" (cliente recusou explicitamente), "inconclusive" (conversa encerrou sem decisão clara)`,
+  )
+  return lines.join('\n')
+}
+
+// ── Hardcoded fallback (original 6-stage criteria) ───────────────────────────
+
+const HARDCODED_CRITERIA_SECTION = `PROCESSO DE AVALIAÇÃO — 6 etapas, score de 0 a 5 por comportamento:
+
+${SCORE_SCALE}
 
 
 1. PLANEJAMENTO
@@ -123,4 +120,65 @@ Além disso, forneça:
 - techniques_used: array com técnicas de vendas utilizadas (ex: ["escuta reflexiva", "perguntas abertas", "ancoragem de benefícios"])
 - techniques_missed: array com técnicas que poderiam ter sido aplicadas mas não foram
 - outcome: desfecho da simulação com base na última resposta do cliente — use exatamente um dos valores: "accepted" (cliente aceitou ou comprometeu-se a avançar), "advanced" (cliente quer próximo passo mas sem compromisso final), "refused" (cliente recusou explicitamente), "inconclusive" (conversa encerrou sem decisão clara)`
+
+// ── Public function ───────────────────────────────────────────────────────────
+
+export function buildEvaluatorPrompt(ctx: EvaluationContext): string {
+  const {
+    profileName,
+    difficultyLevel,
+    scenarioType,
+    visitObjective,
+    successCriteria,
+    salesProcessContext,
+    salesCompetenciesContext,
+    behaviorStyleName,
+    behaviorStyleDescription,
+    behaviorEvaluationCriteria,
+    messageCount,
+    durationMinutes,
+    messages,
+    customCriteria,
+  } = ctx
+
+  const transcript = messages
+    .map((m) => `[${m.role === 'user' ? 'VENDEDOR' : 'CLIENTE'}]: ${m.content}`)
+    .join('\n\n')
+
+  const scenarioContext = scenarioType
+    ? `Cenário: ${scenarioType === 'discovery' ? 'Discovery' : scenarioType === 'objection_handling' ? 'Tratamento de objeções' : 'Fechamento'}.`
+    : ''
+
+  const difficultyContext = difficultyLevel
+    ? `Dificuldade: ${difficultyLevel === 'easy' ? 'Fácil' : difficultyLevel === 'medium' ? 'Médio' : 'Difícil'}.`
+    : ''
+
+  const volumeContext = [
+    messageCount !== undefined ? `Turnos na conversa: ${messageCount}` : null,
+    durationMinutes !== null && durationMinutes !== undefined ? `Duração: ${durationMinutes} min` : null,
+  ].filter(Boolean).join(' | ')
+
+  const stageCount = customCriteria ? customCriteria.stages.length : 6
+  const criteriaSection = customCriteria
+    ? buildDynamicCriteriaSection(customCriteria.stages)
+    : HARDCODED_CRITERIA_SECTION
+
+  return `Você é um coach de vendas especializado da Negociarte. Avalie a performance do vendedor na conversa de treino abaixo seguindo o processo de vendas estruturado em ${stageCount} etapas.
+
+PERFIL DO CLIENTE SIMULADO: ${profileName}
+${scenarioContext}
+${difficultyContext}
+${volumeContext ? `Contexto da sessão: ${volumeContext}.` : ''}
+${visitObjective ? `Objetivo da visita: ${visitObjective}.` : ''}
+${successCriteria ? `Critérios de sucesso: ${successCriteria}.` : ''}
+${behaviorStyleName ? `Estilo comportamental do cliente: ${behaviorStyleName}.` : ''}
+${behaviorStyleDescription ? `Descrição do estilo: ${behaviorStyleDescription}.` : ''}
+${behaviorEvaluationCriteria ? `Critérios de adequação ao estilo: ${behaviorEvaluationCriteria}.` : ''}
+${salesProcessContext ? `Processo de vendas esperado: ${salesProcessContext}.` : ''}
+${salesCompetenciesContext ? `Competências esperadas: ${salesCompetenciesContext}.` : ''}
+
+TRANSCRIÇÃO:
+${transcript}
+
+${criteriaSection}`
 }

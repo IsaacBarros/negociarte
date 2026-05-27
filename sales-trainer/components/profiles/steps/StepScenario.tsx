@@ -1,8 +1,10 @@
 'use client'
 
+import { Controller } from 'react-hook-form'
 import { ProfileFormField } from '@/components/profiles/ProfileFormField'
 import { ProfileSectionCard } from '@/components/profiles/ProfileSectionCard'
 import { SELECTABLE_CHAT_MODELS } from '@/lib/ai/models'
+import { SESSION_OBJECTIVES, SESSION_OBJECTIVE_LABELS, type SessionObjective } from '@/lib/schemas/session'
 import type { StepProps } from './types'
 
 const inputClass =
@@ -205,6 +207,48 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
           />
           Cenário ativo para vendedores
         </label>
+      </ProfileSectionCard>
+
+      <ProfileSectionCard
+        title="Objetivos disponíveis"
+        description="Selecione quais objetivos o vendedor pode escolher neste cenário. Deixe todos marcados para disponibilizar os 5 padrões."
+      >
+        <Controller
+          control={form.control}
+          name="available_objectives"
+          render={({ field }) => {
+            const value = field.value as SessionObjective[] | null | undefined
+            // null = todos disponíveis → todos marcados na UI
+            const checked = value ?? [...SESSION_OBJECTIVES]
+
+            function toggle(obj: SessionObjective) {
+              const next = checked.includes(obj)
+                ? checked.filter((o) => o !== obj)
+                : [...checked, obj]
+              // Se todos selecionados, salva null (padrão)
+              field.onChange(next.length === SESSION_OBJECTIVES.length ? null : next)
+            }
+
+            return (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {SESSION_OBJECTIVES.map((obj) => (
+                  <label key={obj} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+                    <input
+                      type="checkbox"
+                      checked={checked.includes(obj)}
+                      onChange={() => toggle(obj)}
+                      className="size-4 rounded border-neutral-300"
+                    />
+                    {SESSION_OBJECTIVE_LABELS[obj]}
+                  </label>
+                ))}
+              </div>
+            )
+          }}
+        />
+        <p className="mt-2 text-xs text-neutral-400">
+          Ao marcar todos, o campo fica em branco no banco (comportamento padrão).
+        </p>
       </ProfileSectionCard>
     </div>
   )

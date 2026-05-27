@@ -1,6 +1,7 @@
 // Este arquivo é GERADO pelo Supabase CLI.
 // Execute: pnpm db:types para atualizar.
-// NÃO edite manualmente.
+// Atualizado manualmente para incluir tabelas das migrations 0012–0016
+// enquanto o CLI não está autenticado no ambiente local.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -87,6 +88,7 @@ export type Database = {
           scenario_type: string | null
           difficulty_level: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           chat_model: string | null
+          available_objectives: string[] | null
           system_prompt: string
           is_active: boolean
           created_at: string
@@ -123,6 +125,7 @@ export type Database = {
           scenario_type?: string | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           chat_model?: string | null
+          available_objectives?: string[] | null
           system_prompt: string
           is_active?: boolean
           created_at?: string
@@ -159,6 +162,7 @@ export type Database = {
           scenario_type?: string | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | 'trainee_choice' | null
           chat_model?: string | null
+          available_objectives?: string[] | null
           system_prompt?: string
           is_active?: boolean
           created_at?: string
@@ -180,6 +184,7 @@ export type Database = {
           market_situation: string | null
           competition_context: string | null
           marketing_strategy: string | null
+          join_code: string
           is_active: boolean
           created_at: string
           updated_at: string
@@ -197,6 +202,7 @@ export type Database = {
           market_situation?: string | null
           competition_context?: string | null
           marketing_strategy?: string | null
+          join_code?: string
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -214,6 +220,7 @@ export type Database = {
           market_situation?: string | null
           competition_context?: string | null
           marketing_strategy?: string | null
+          join_code?: string
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -327,6 +334,7 @@ export type Database = {
           behavior_style_id: string | null
           outcome: 'accepted' | 'rejected' | 'ended_by_errors' | null
           difficulty_level: 'easy' | 'medium' | 'hard' | null
+          chosen_objective: string | null
         }
         Insert: {
           id?: string
@@ -341,6 +349,7 @@ export type Database = {
           behavior_style_id?: string | null
           outcome?: 'accepted' | 'rejected' | 'ended_by_errors' | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | null
+          chosen_objective?: string | null
         }
         Update: {
           id?: string
@@ -355,6 +364,7 @@ export type Database = {
           behavior_style_id?: string | null
           outcome?: 'accepted' | 'rejected' | 'ended_by_errors' | null
           difficulty_level?: 'easy' | 'medium' | 'hard' | null
+          chosen_objective?: string | null
         }
         Relationships: []
       }
@@ -433,12 +443,143 @@ export type Database = {
         }
         Relationships: []
       }
+      company_knowledge_docs: {
+        Row: {
+          id: string
+          organization_id: string
+          company_id: string
+          title: string
+          source_type: 'pdf' | 'url' | 'text'
+          source_url: string | null
+          extracted_text: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          company_id: string
+          title: string
+          source_type: 'pdf' | 'url' | 'text'
+          source_url?: string | null
+          extracted_text?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          company_id?: string
+          title?: string
+          source_type?: 'pdf' | 'url' | 'text'
+          source_url?: string | null
+          extracted_text?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      seller_companies: {
+        Row: {
+          seller_id: string
+          company_id: string
+          organization_id: string
+          created_at: string
+        }
+        Insert: {
+          seller_id: string
+          company_id: string
+          organization_id: string
+          created_at?: string
+        }
+        Update: {
+          seller_id?: string
+          company_id?: string
+          organization_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      seller_customer_history: {
+        Row: {
+          id: string
+          organization_id: string
+          seller_id: string
+          customer_id: string
+          history_text: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          seller_id: string
+          customer_id: string
+          history_text: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          seller_id?: string
+          customer_id?: string
+          history_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluation_criteria: {
+        Row: {
+          id: string
+          organization_id: string
+          company_id: string
+          name: string
+          stages: Json
+          total_points: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          company_id: string
+          name: string
+          stages: Json
+          total_points?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          company_id?: string
+          name?: string
+          stages?: Json
+          total_points?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
       increment_session_tokens: {
         Args: { p_session_id: string; p_tokens: number }
         Returns: undefined
+      }
+      join_project_by_code: {
+        Args: { p_code: string }
+        Returns: Json
+      }
+      get_project_by_join_code: {
+        Args: { p_code: string }
+        Returns: { id: string; name: string }[]
       }
     }
     Enums: Record<string, never>
