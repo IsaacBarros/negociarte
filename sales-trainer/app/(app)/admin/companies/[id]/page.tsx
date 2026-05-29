@@ -7,6 +7,7 @@ import { ScenarioEntityForm } from '@/components/profiles/ScenarioEntityForm'
 import { KnowledgeDocList } from '@/components/admin/KnowledgeDocList'
 import { ProjectTabs } from '@/components/admin/ProjectTabs'
 import { ScenariosSection } from '@/components/admin/ScenariosSection'
+import { ClientsSection } from '@/components/admin/ClientsSection'
 import { AccessSection } from '@/components/admin/AccessSection'
 import { BehaviorStylesSection } from '@/components/admin/BehaviorStylesSection'
 import { CriteriaManagerSection } from '@/components/admin/CriteriaManagerSection'
@@ -16,7 +17,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Projeto — Negociarte' }
 
-const VALID_TABS = ['context', 'scenarios', 'styles', 'criteria', 'access'] as const
+const VALID_TABS = ['context', 'clients', 'styles', 'criteria', 'scenarios', 'access'] as const
 type Tab = (typeof VALID_TABS)[number]
 
 export default async function CompanyPage({
@@ -72,6 +73,17 @@ export default async function CompanyPage({
         .order('created_at', { ascending: true })
     : { data: null }
 
+  // ── Tab: clients ─────────────────────────────────────────────────────────
+
+  const { data: clientsData } = tab === 'clients'
+    ? await supabase
+        .from('scenario_customers')
+        .select('id, name, company_name, buyer_role, chat_model, business_profile_text, business_profile_file_path, pain_objections_text, pain_objections_file_path, relationship_history_text, relationship_history_file_path')
+        .eq('company_id', id)
+        .eq('organization_id', user.organization_id)
+        .order('name', { ascending: true })
+    : { data: null }
+
   // ── Tab: scenarios ────────────────────────────────────────────────────────
 
   const { data: linkedSellerCompanyRows } = tab === 'scenarios'
@@ -82,7 +94,7 @@ export default async function CompanyPage({
     (r) => (r as { seller_id: string }).seller_id,
   )
 
-  const [{ data: profiles }, { data: linkedSellersForHistory }, { data: sellerHistories }] =
+  const [{ data: profiles }, { data: linkedSellersForHistory }, { data: sellerHistories }, { data: scenarioTypesData }] =
     await Promise.all([
       tab === 'scenarios'
         ? supabase
@@ -100,6 +112,14 @@ export default async function CompanyPage({
             .from('seller_customer_history')
             .select('seller_id, customer_id, history_text')
             .eq('organization_id', user.organization_id)
+        : { data: null },
+      tab === 'scenarios'
+        ? supabase
+            .from('scenario_types')
+            .select('key, label')
+            .eq('organization_id', user.organization_id)
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true })
         : { data: null },
     ])
 
@@ -123,13 +143,25 @@ export default async function CompanyPage({
     (r) => (r as { seller_id: string }).seller_id,
   )
 
-  // ── Tab: styles ───────────────────────────────────────────────────────────
+  // ── Tab: styles / scenarios (estilos necessários nos dois) ───────────────
 
-  const { data: behaviorStyles } = tab === 'styles'
+  const { data: behaviorStyles } = (tab === 'styles' || tab === 'scenarios')
     ? await supabase
         .from('behavior_styles')
         .select('id, name, description, simulation_guidance, evaluation_criteria, is_active')
         .eq('organization_id', user.organization_id)
+        .eq('is_active', true)
+        .order('name', { ascending: true })
+    : { data: null }
+
+  // Clientes do projeto para o seletor de cenários
+  const { data: projectClients } = tab === 'scenarios'
+    ? await supabase
+        .from('scenario_customers')
+        .select('id, name, company_name, buyer_role, chat_model')
+        .eq('company_id', id)
+        .eq('organization_id', user.organization_id)
+        .eq('is_active', true)
         .order('name', { ascending: true })
     : { data: null }
 
@@ -138,7 +170,7 @@ export default async function CompanyPage({
   const { data: activeCriteriaRaw } = tab === 'criteria'
     ? await supabase
         .from('evaluation_criteria')
-        .select('id, name, stages, total_points, is_active')
+        .select('id, name, stages, total_points, is_active, sales_process_text, sales_process_file_path, competencies_text, competencies_file_path')
         .eq('company_id', id)
         .eq('is_active', true)
         .single()
@@ -193,6 +225,10 @@ export default async function CompanyPage({
     stages: unknown
     total_points: number
     is_active: boolean
+    sales_process_text: string | null
+    sales_process_file_path: string | null
+    competencies_text: string | null
+    competencies_file_path: string | null
   }
 
   return (
@@ -227,22 +263,12 @@ export default async function CompanyPage({
       {/* ── Tab: Contexto ─────────────────────────────────────────────────── */}
       {tab === 'context' && (
         <div className="space-y-10">
-          {/* 1. O que você vende */}
-          <section>
-            <h2 className="mb-1 text-sm font-semibold text-neutral-700">O que a empresa vende</h2>
-            <p className="mb-4 text-xs text-neutral-500">
-              Preencha o contexto de produto e mercado. Esses dados são injetados em todos os
-              cenários de treino deste projeto.
-            </p>
-            <ScenarioEntityForm kind="company" action={updateAction} initialData={initialData} />
-          </section>
-
-          {/* 2. Base de conhecimento */}
+          {/* 1. Base de conhecimento — documentos primeiro */}
           <section>
             <h2 className="mb-1 text-sm font-semibold text-neutral-700">Base de conhecimento</h2>
             <p className="mb-4 text-xs text-neutral-500">
-              Suba PDFs, adicione links ou cole textos. A IA analisa e pré-preenche os dados acima
-              e gera cenários prontos para treino na aba Cenários.
+              Suba PDFs, adicione links ou cole textos. A IA analisa e pré-preenche o contexto
+              abaixo e gera cenários na aba Cenários usando esses documentos automaticamente.
             </p>
             <KnowledgeDocList
               companyId={id}
@@ -251,6 +277,44 @@ export default async function CompanyPage({
               projectProductContext={company.product_context}
             />
           </section>
+
+          {/* 2. Contexto do vendedor */}
+          <section>
+            <h2 className="mb-1 text-sm font-semibold text-neutral-700">O que a empresa vende</h2>
+            <p className="mb-4 text-xs text-neutral-500">
+              Contexto de produto e mercado. Injetado em todos os cenários de treino deste projeto.
+            </p>
+            <ScenarioEntityForm kind="company" action={updateAction} initialData={initialData} />
+          </section>
+        </div>
+      )}
+
+      {/* ── Tab: Clientes ─────────────────────────────────────────────────── */}
+      {tab === 'clients' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-700">Clientes</h2>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              Compradores que os vendedores vão simular negociar. Cada cliente pode ter documentos
+              de contexto (perfil, dores, histórico) que a IA usa para gerar cenários.
+            </p>
+          </div>
+          <ClientsSection
+            companyId={id}
+            initialClients={(clientsData ?? []) as {
+              id: string
+              name: string
+              company_name: string | null
+              buyer_role: string | null
+              chat_model: string | null
+              business_profile_text: string | null
+              business_profile_file_path: string | null
+              pain_objections_text: string | null
+              pain_objections_file_path: string | null
+              relationship_history_text: string | null
+              relationship_history_file_path: string | null
+            }[]}
+          />
         </div>
       )}
 
@@ -262,6 +326,9 @@ export default async function CompanyPage({
             projectProductContext={company.product_context}
             profiles={profilesWithHistories}
             sellers={linkedSellers}
+            clients={(projectClients ?? []) as { id: string; name: string; company_name: string | null; buyer_role: string | null; chat_model: string | null }[]}
+            styles={(behaviorStyles ?? []) as { id: string; name: string }[]}
+            scenarioTypes={(scenarioTypesData ?? []) as { key: string; label: string }[]}
           />
         </div>
       )}
@@ -312,6 +379,10 @@ export default async function CompanyPage({
                     }[],
                     total_points: (activeCriteriaRaw as CriteriaRaw).total_points,
                     is_active: (activeCriteriaRaw as CriteriaRaw).is_active,
+                    sales_process_text: (activeCriteriaRaw as CriteriaRaw).sales_process_text,
+                    sales_process_file_path: (activeCriteriaRaw as CriteriaRaw).sales_process_file_path,
+                    competencies_text: (activeCriteriaRaw as CriteriaRaw).competencies_text,
+                    competencies_file_path: (activeCriteriaRaw as CriteriaRaw).competencies_file_path,
                   }
                 : null
             }

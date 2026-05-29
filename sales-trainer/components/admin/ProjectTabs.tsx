@@ -2,9 +2,10 @@ import Link from 'next/link'
 
 const TABS = [
   { key: 'context', label: 'Contexto' },
-  { key: 'scenarios', label: 'Cenários' },
+  { key: 'clients', label: 'Clientes' },
   { key: 'styles', label: 'Estilos' },
   { key: 'criteria', label: 'Critérios' },
+  { key: 'scenarios', label: 'Cenários' },
   { key: 'access', label: 'Acesso' },
 ] as const
 

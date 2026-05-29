@@ -31,6 +31,7 @@ export const CustomerProfileSchema = z.object({
   chat_model: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
   available_objectives: z.array(z.enum(SESSION_OBJECTIVES)).nullable().optional(),
+  system_prompt: z.string().optional(),
 })
 
 export const BulkProfileSchema = z.object({

@@ -370,3 +370,97 @@ export async function createProfileQuick(rawInput: unknown) {
   revalidatePath('/admin/companies')
   return data as { id: string; name: string }
 }
+
+const ClientForProjectSchema = z.object({
+  company_id: z.string().uuid(),
+  name: z.string().min(1).max(255),
+  company_name: z.string().min(1).max(255),
+  buyer_role: z.string().max(255).optional(),
+  chat_model: z.string().nullable().optional(),
+})
+
+/** Cria um cliente (scenario_customer) vinculado a um projeto específico. Retorna { id, name }. */
+export async function createClientForProject(rawInput: unknown) {
+  const user = await requireAdmin()
+  const input = ClientForProjectSchema.parse(rawInput)
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('scenario_customers')
+    .insert({
+      organization_id: user.organization_id,
+      created_by: user.id,
+      company_id: input.company_id,
+      company_name: input.company_name,
+      name: input.name,
+      buyer_role: toNullable(input.buyer_role),
+      chat_model: input.chat_model ?? null,
+      is_active: true,
+    })
+    .select('id, name')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? 'Erro ao criar cliente')
+  revalidatePath(`/admin/companies/${input.company_id}`)
+  return data as { id: string; name: string }
+}
+
+const UpdateClientChatModelSchema = z.object({
+  customer_id: z.string().uuid(),
+  company_id: z.string().uuid(),
+  chat_model: z.string().nullable(),
+})
+
+/** Atualiza o modelo de IA de um cliente. */
+export async function updateClientChatModel(rawInput: unknown) {
+  const user = await requireAdmin()
+  const { customer_id, company_id, chat_model } = UpdateClientChatModelSchema.parse(rawInput)
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('scenario_customers')
+    .update({ chat_model })
+    .eq('id', customer_id)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/admin/companies/${company_id}`)
+}
+
+/** Deleta um cliente do projeto. Cascadeia customer_profiles vinculados. */
+export async function deleteClientForProject(customer_id: string, company_id: string) {
+  const user = await requireAdmin()
+  const supabase = await createClient()
+
+  // Deletar customer_profiles vinculados (training_sessions primeiro)
+  const { data: profileRows } = await supabase
+    .from('customer_profiles')
+    .select('id')
+    .eq('customer_id', customer_id)
+    .eq('organization_id', user.organization_id)
+
+  const profileIds = (profileRows ?? []).map((p) => (p as { id: string }).id)
+
+  if (profileIds.length > 0) {
+    await supabase
+      .from('training_sessions')
+      .delete()
+      .in('customer_profile_id', profileIds)
+      .eq('organization_id', user.organization_id)
+
+    await supabase
+      .from('customer_profiles')
+      .delete()
+      .in('id', profileIds)
+      .eq('organization_id', user.organization_id)
+  }
+
+  const { error } = await supabase
+    .from('scenario_customers')
+    .delete()
+    .eq('id', customer_id)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/admin/companies/${company_id}`)
+}

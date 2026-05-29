@@ -100,6 +100,7 @@ function defaultsFrom(
     chat_model: initialData?.chat_model ?? draft.chat_model ?? null,
     is_active: initialData?.is_active ?? draft.is_active ?? true,
     available_objectives: (initialData?.available_objectives as SessionObjective[] | null) ?? draft.available_objectives ?? null,
+    system_prompt: '',
   }
 }
 

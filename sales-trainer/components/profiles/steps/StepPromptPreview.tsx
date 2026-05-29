@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Check, Copy, AlertTriangle } from 'lucide-react'
+import { useMemo, useState, useEffect, useRef } from 'react'
+import { Check, Copy, AlertTriangle, RotateCcw } from 'lucide-react'
 import { buildPersonaPrompt } from '@/lib/ai/prompts/persona-template'
 import type { CustomerProfileInput } from '@/lib/schemas/profile'
 import type { Database } from '@/types/database'
@@ -13,10 +13,13 @@ interface Props {
   profileUpdatedAt?: string | null
   companyUpdatedAt?: string | null
   customerUpdatedAt?: string | null
+  onPromptChange?: (prompt: string) => void
 }
 
-export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt }: Props) {
+export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt, onPromptChange }: Props) {
   const [copied, setCopied] = useState(false)
+  const [editedPrompt, setEditedPrompt] = useState('')
+  const isFirstRender = useRef(true)
 
   const isStale = useMemo(() => {
     if (!profileUpdatedAt) return false
@@ -26,7 +29,7 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
     return companyDate > profileDate || customerDate > profileDate
   }, [profileUpdatedAt, companyUpdatedAt, customerUpdatedAt])
 
-  const prompt = useMemo(() => {
+  const generatedPrompt = useMemo(() => {
     const asProfile: CustomerProfile = {
       id: '',
       organization_id: '',
@@ -68,8 +71,18 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
     return buildPersonaPrompt(asProfile)
   }, [values])
 
+  // Sincroniza editedPrompt com o gerado apenas na primeira renderização
+  useEffect(() => {
+    if (isFirstRender.current) {
+      setEditedPrompt(generatedPrompt)
+      isFirstRender.current = false
+    }
+  }, [generatedPrompt])
+
+  const isEdited = editedPrompt !== generatedPrompt
+
   async function copyPrompt() {
-    await navigator.clipboard.writeText(prompt)
+    await navigator.clipboard.writeText(editedPrompt)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1400)
   }
@@ -88,25 +101,43 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
         </div>
       )}
       <div className="rounded-lg border border-neutral-200 bg-white">
-      <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-        <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Preview do prompt</h2>
-          <p className="mt-1 text-sm text-neutral-500">{prompt.length} caracteres</p>
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-900">Preview do prompt</h2>
+            <p className="mt-1 text-sm text-neutral-500">{editedPrompt.length} caracteres</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isEdited && (
+              <button
+                type="button"
+                onClick={() => { setEditedPrompt(generatedPrompt); onPromptChange?.('') }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-500 hover:bg-neutral-50"
+                title="Restaurar prompt gerado automaticamente"
+              >
+                <RotateCcw className="size-3.5" />
+                Restaurar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void copyPrompt()}
+              className="inline-flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+            >
+              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              {copied ? 'Copiado' : 'Copiar'}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => void copyPrompt()}
-          className="inline-flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-        >
-          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          {copied ? 'Copiado' : 'Copiar'}
-        </button>
-      </div>
-      <div className="max-h-[620px] overflow-y-auto bg-neutral-50 p-5">
-        <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-neutral-700">
-          {prompt}
-        </pre>
-      </div>
+        <div className="bg-neutral-50 p-5">
+          <textarea
+            value={editedPrompt}
+            onChange={(e) => { setEditedPrompt(e.target.value); onPromptChange?.(e.target.value) }}
+            className="w-full resize-none rounded-md border border-transparent bg-transparent font-mono text-xs leading-relaxed text-neutral-700 focus:border-neutral-300 focus:bg-white focus:outline-none focus:ring-0"
+            style={{ minHeight: '400px', maxHeight: '620px' }}
+            rows={Math.max(20, editedPrompt.split('\n').length + 2)}
+            spellCheck={false}
+          />
+        </div>
       </div>
     </section>
   )

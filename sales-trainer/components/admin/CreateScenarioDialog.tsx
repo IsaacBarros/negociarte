@@ -7,7 +7,9 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Settings,
 } from 'lucide-react'
+import Link from 'next/link'
 import {
   Dialog,
   DialogContent,
@@ -15,22 +17,43 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { createCustomerQuick, createProfileQuick } from '@/lib/actions/scenario-entities'
+import { createProfileQuick } from '@/lib/actions/scenario-entities'
+
+interface ClientOption {
+  id: string
+  name: string
+  company_name: string | null
+  buyer_role: string | null
+  chat_model: string | null
+}
+
+interface StyleOption {
+  id: string
+  name: string
+}
+
+interface ScenarioTypeOption {
+  key: string
+  label: string
+}
 
 interface Props {
   open: boolean
   onOpenChange: (v: boolean) => void
   companyId: string
   projectProductContext?: string | null
+  clients: ClientOption[]
+  styles: StyleOption[]
+  scenarioTypes: ScenarioTypeOption[]
 }
 
 type State = 'idle' | 'working' | 'done' | 'error'
 
-const SCENARIO_TYPES = [
-  { value: 'discovery', label: 'Descoberta' },
-  { value: 'objection_handling', label: 'Contorno de objeções' },
-  { value: 'closing', label: 'Fechamento' },
-] as const
+const DEFAULT_SCENARIO_TYPES: ScenarioTypeOption[] = [
+  { key: 'discovery', label: 'Descoberta' },
+  { key: 'objection_handling', label: 'Contorno de objeções' },
+  { key: 'closing', label: 'Fechamento' },
+]
 
 const DIFFICULTY_LEVELS = [
   { value: 'easy', label: 'Fácil' },
@@ -39,7 +62,6 @@ const DIFFICULTY_LEVELS = [
   { value: 'trainee_choice', label: 'Aluno escolhe' },
 ] as const
 
-type ScenarioType = (typeof SCENARIO_TYPES)[number]['value']
 type DifficultyLevel = (typeof DIFFICULTY_LEVELS)[number]['value']
 
 interface GeneratedData {
@@ -69,32 +91,34 @@ interface GeneratedData {
   }
 }
 
-export function CreateScenarioDialog({ open, onOpenChange, companyId, projectProductContext }: Props) {
+export function CreateScenarioDialog({
+  open,
+  onOpenChange,
+  companyId,
+  projectProductContext,
+  clients,
+  styles,
+  scenarioTypes,
+}: Props) {
   const router = useRouter()
   const [state, setState] = useState<State>('idle')
   const [workingMsg, setWorkingMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const [contactName, setContactName] = useState('')
-  const [contactRole, setContactRole] = useState('')
-  const [prospectCompanyName, setProspectCompanyName] = useState('')
-  const [extraContext, setExtraContext] = useState('')
-  const [hasPriorContact, setHasPriorContact] = useState(false)
-  const [relationshipHistory, setRelationshipHistory] = useState('')
-  const [scenarioType, setScenarioType] = useState<ScenarioType>('discovery')
+  const [clientId, setClientId] = useState('')
+  const [styleId, setStyleId] = useState('')
+  const [scenarioType, setScenarioType] = useState('')
   const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevel>('medium')
+
+  const activeTypes = scenarioTypes.length > 0 ? scenarioTypes : DEFAULT_SCENARIO_TYPES
 
   function reset() {
     setState('idle')
     setWorkingMsg('')
     setErrorMsg(null)
-    setContactName('')
-    setContactRole('')
-    setProspectCompanyName('')
-    setExtraContext('')
-    setHasPriorContact(false)
-    setRelationshipHistory('')
-    setScenarioType('discovery')
+    setClientId('')
+    setStyleId('')
+    setScenarioType('')
     setDifficultyLevel('medium')
   }
 
@@ -107,10 +131,7 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
     if (!open) setTimeout(reset, 300)
   }, [open])
 
-  const canGenerate =
-    contactName.trim().length > 0 &&
-    contactRole.trim().length > 0 &&
-    prospectCompanyName.trim().length > 0
+  const canGenerate = clientId.length > 0 && styleId.length > 0 && scenarioType.length > 0
 
   async function handleGenerate() {
     setState('working')
@@ -123,11 +144,8 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company_id: companyId,
-          contact_name: contactName.trim(),
-          contact_role: contactRole.trim(),
-          prospect_company_name: prospectCompanyName.trim(),
-          prospect_company_description: extraContext.trim() || undefined,
-          relationship_history: hasPriorContact ? relationshipHistory.trim() || undefined : undefined,
+          customer_id: clientId,
+          behavior_style_id: styleId,
           scenario_type: scenarioType,
           difficulty_level: difficultyLevel,
         }),
@@ -145,21 +163,9 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
 
       setWorkingMsg('Salvando cenário…')
 
-      const createdCustomer = await createCustomerQuick({
-        name: data.customer.name,
-        buyer_role: data.customer.buyer_role,
-        description: `${prospectCompanyName} — ${data.customer.description}`,
-        pain_points: data.customer.pain_points,
-        objections: data.customer.objections,
-        budget_context: data.customer.budget_context,
-        decision_authority: data.customer.decision_authority,
-        personality_traits: data.customer.personality_traits,
-        communication_style: data.customer.communication_style,
-      })
-
       await createProfileQuick({
         company_id: companyId,
-        customer_id: createdCustomer.id,
+        customer_id: clientId,
         name: data.profile.name,
         buyer_role: data.customer.buyer_role,
         industry: data.profile.industry,
@@ -173,7 +179,6 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
         product_context: projectProductContext ?? undefined,
         market_situation: data.profile.market_situation,
         competition_context: data.profile.competition_context,
-        marketing_strategy: undefined,
         visible_briefing: data.profile.visible_briefing,
         visit_objective: data.profile.visit_objective,
         success_criteria: data.profile.success_criteria,
@@ -182,6 +187,7 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
         sales_competencies_context: data.profile.sales_competencies_context,
         scenario_type: scenarioType,
         difficulty_level: difficultyLevel,
+        chat_model: selectedClient?.chat_model ?? null,
         is_active: true,
       })
 
@@ -192,6 +198,8 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
       setErrorMsg(err instanceof Error ? err.message : 'Erro ao salvar.')
     }
   }
+
+  const selectedClient = clients.find((c) => c.id === clientId)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -204,7 +212,7 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
           <DialogDescription>
             {state === 'done'
               ? 'Cenário criado com sucesso!'
-              : 'Informe o contato e a IA monta o cenário usando a base de conhecimento.'}
+              : 'Selecione um cliente e um estilo. A IA monta o cenário com os documentos do cliente.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -253,118 +261,86 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
         {/* form */}
         {state === 'idle' && (
           <div className="mt-2 space-y-4">
-            {/* Identificação */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-600">
-                  Nome do contato <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  placeholder="João Mendes"
-                  className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-600">
-                  Cargo <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={contactRole}
-                  onChange={(e) => setContactRole(e.target.value)}
-                  placeholder="CFO"
-                  className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
-                />
-              </div>
-            </div>
-
+            {/* Seletor de cliente */}
             <div>
               <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Empresa <span className="text-red-400">*</span>
+                Cliente <span className="text-red-400">*</span>
               </label>
-              <input
-                type="text"
-                value={prospectCompanyName}
-                onChange={(e) => setProspectCompanyName(e.target.value)}
-                placeholder="TechCorp Distribuidora"
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
-              />
+              {clients.length === 0 ? (
+                <p className="rounded-md border border-dashed border-neutral-200 px-3 py-2.5 text-xs text-neutral-400">
+                  Nenhum cliente cadastrado neste projeto.{' '}
+                  <span className="font-medium">Vá para a aba Clientes para criar.</span>
+                </p>
+              ) : (
+                <select
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
+                >
+                  <option value="">Selecionar cliente…</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.company_name ? ` — ${c.company_name}` : ''}{c.buyer_role ? ` (${c.buyer_role})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedClient && (
+                <p className="mt-1 text-xs text-neutral-400">
+                  {[selectedClient.company_name, selectedClient.buyer_role].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
 
+            {/* Seletor de estilo */}
             <div>
               <label className="mb-1 block text-xs font-medium text-neutral-600">
-                Contexto adicional
-                <span className="ml-1 font-normal text-neutral-400">(opcional)</span>
+                Estilo de comportamento <span className="text-red-400">*</span>
               </label>
-              <textarea
-                value={extraContext}
-                onChange={(e) => setExtraContext(e.target.value)}
-                rows={2}
-                maxLength={500}
-                placeholder="Algo específico desta empresa que não está nos documentos?"
-                className="w-full resize-none rounded-md border border-neutral-200 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
-              />
-            </div>
-
-            {/* Histórico */}
-            <div>
-              <label className="mb-2 block text-xs font-medium text-neutral-600">
-                Histórico de relacionamento
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setHasPriorContact(false)}
-                  className={[
-                    'rounded-md border px-3 py-1.5 text-xs transition-colors',
-                    !hasPriorContact
-                      ? 'border-neutral-900 bg-neutral-900 text-white'
-                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
-                  ].join(' ')}
+              {styles.length === 0 ? (
+                <p className="rounded-md border border-dashed border-neutral-200 px-3 py-2.5 text-xs text-neutral-400">
+                  Nenhum estilo ativo.{' '}
+                  <span className="font-medium">Vá para a aba Estilos para configurar.</span>
+                </p>
+              ) : (
+                <select
+                  value={styleId}
+                  onChange={(e) => setStyleId(e.target.value)}
+                  className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
                 >
-                  Primeiro contato
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHasPriorContact(true)}
-                  className={[
-                    'rounded-md border px-3 py-1.5 text-xs transition-colors',
-                    hasPriorContact
-                      ? 'border-neutral-900 bg-neutral-900 text-white'
-                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
-                  ].join(' ')}
-                >
-                  Já tive contato
-                </button>
-              </div>
-              {hasPriorContact && (
-                <textarea
-                  value={relationshipHistory}
-                  onChange={(e) => setRelationshipHistory(e.target.value)}
-                  rows={3}
-                  maxLength={2000}
-                  placeholder="Como foi o contato anterior? O que ficou pendente?"
-                  className="mt-2 w-full resize-none rounded-md border border-neutral-200 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none"
-                />
+                  <option value="">Selecionar estilo…</option>
+                  {styles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
             <div className="border-t border-neutral-100 pt-4 space-y-4">
               {/* Tipo */}
               <div>
-                <label className="mb-2 block text-xs font-medium text-neutral-600">Tipo</label>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-xs font-medium text-neutral-600">Tipo <span className="text-red-400">*</span></label>
+                  <Link
+                    href="/admin/settings"
+                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700"
+                    title="Gerenciar tipos"
+                  >
+                    <Settings className="size-3" />
+                    Gerenciar
+                  </Link>
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {SCENARIO_TYPES.map((t) => (
+                  {activeTypes.map((t) => (
                     <button
-                      key={t.value}
+                      key={t.key}
                       type="button"
-                      onClick={() => setScenarioType(t.value)}
+                      onClick={() => setScenarioType(t.key)}
                       className={[
                         'rounded-md border px-3 py-1.5 text-sm transition-colors',
-                        scenarioType === t.value
+                        scenarioType === t.key
                           ? 'border-violet-600 bg-violet-50 text-violet-700'
                           : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
                       ].join(' ')}
@@ -401,7 +377,7 @@ export function CreateScenarioDialog({ open, onOpenChange, companyId, projectPro
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-neutral-100 pt-4">
               <p className="text-xs text-neutral-400">
-                Base de conhecimento usada automaticamente.
+                Documentos do cliente usados automaticamente.
               </p>
               <button
                 type="button"

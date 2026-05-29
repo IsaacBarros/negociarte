@@ -223,6 +223,7 @@ export function ProfileFormLayout({
           profileUpdatedAt={initialData?.updated_at}
           companyUpdatedAt={localCompanies.find((c) => c.id === values.company_id)?.updated_at}
           customerUpdatedAt={localCustomers.find((c) => c.id === values.customer_id)?.updated_at}
+          onPromptChange={(p) => form.setValue('system_prompt', p, { shouldDirty: true })}
         />
       )}
 

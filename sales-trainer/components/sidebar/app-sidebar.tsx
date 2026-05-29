@@ -75,6 +75,7 @@ export function AppSidebar({ profile }: { profile: Profile }) {
               {[
                 { href: '/admin/sessions', label: 'Sessões' },
                 { href: '/admin/analytics', label: 'Analytics' },
+                { href: '/admin/settings', label: 'Configurações' },
               ].map((item) => {
                 const active = pathname.startsWith(item.href)
                 return (

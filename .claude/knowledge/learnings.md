@@ -325,6 +325,27 @@ Essas mudanças são **necessárias** — a migration 0018_project_join_code tor
 - Radar chart no FeedbackCard (ainda barras)
 - Fallback no evaluator quando org sem critérios cadastrados
 
+---
+
+## 2026-05-29 — Clientes com PDFs + prompt editável + resoluções
+
+**Categoria:** Arquitetura | Banco | UI
+
+### Feito
+
+- **Migrations 0019 e 0020 aplicadas** — `scenario_customers` ganhou `company_id` + 3 slots de PDF; `evaluation_criteria` ganhou `sales_process_text/file_path` + `competencies_text/file_path`.
+- **Score SessionsTable corrigido** — exibe 0–200 (era "X/10" do schema legado do n8n).
+- **Aba Clientes** — `scenario_customers` virou entidade do projeto com 3 PDFs (perfil, dores/objeções, histórico). Upload via `/api/knowledge/upload-entity-doc`. Componentes: `ClientDocSlot`, `ClientsSection`, `CreateClientDialog`.
+- **Cenários via seletor** — `CreateScenarioDialog` reescrito: dropdown de cliente + dropdown de estilo (sem campos de texto livres). Rota `generate-scenario-from-contact` usa PDFs do cliente como contexto.
+- **Prompt editável** — `StepPromptPreview` virou `<textarea>`. Edição propaga para o formulário via `onPromptChange` → `form.setValue('system_prompt', ...)`. Server actions usam o prompt customizado se não-vazio; do contrário, recompilam.
+
+### Pendente
+
+- `scenario-entities.ts` — 3 linhas não commitadas (`join_code: randomUUID()` nos inserts de empresa). Necessário para constraint `NOT NULL`.
+- Indicador de prompt desatualizado no `StepPromptPreview`.
+- Fallback no evaluator quando org sem critérios cadastrados.
+- Radar chart no FeedbackCard (ainda barras).
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

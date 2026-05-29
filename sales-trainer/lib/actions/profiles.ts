@@ -110,7 +110,9 @@ export async function createProfile(rawInput: unknown) {
     system_prompt: '',
   }
 
-  dbData.system_prompt = compileSystemPrompt(dbData)
+  dbData.system_prompt = input.system_prompt?.trim()
+    ? input.system_prompt
+    : compileSystemPrompt(dbData)
 
   const { data, error } = await supabase
     .from('customer_profiles')
@@ -186,7 +188,9 @@ export async function updateProfile(id: string, rawInput: unknown) {
   }
 
   const merged = { ...existing, ...updateData }
-  const system_prompt = compileSystemPrompt(merged)
+  const system_prompt = input.system_prompt?.trim()
+    ? input.system_prompt
+    : compileSystemPrompt(merged)
 
   const { error } = await supabase
     .from('customer_profiles')

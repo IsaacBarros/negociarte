@@ -232,6 +232,8 @@ export type Database = {
           id: string
           organization_id: string
           created_by: string | null
+          company_id: string | null
+          company_name: string | null
           name: string
           description: string | null
           buyer_role: string | null
@@ -242,6 +244,13 @@ export type Database = {
           personality_traits: string | null
           communication_style: string | null
           confidential_context: string | null
+          business_profile_text: string | null
+          business_profile_file_path: string | null
+          pain_objections_text: string | null
+          pain_objections_file_path: string | null
+          relationship_history_text: string | null
+          relationship_history_file_path: string | null
+          chat_model: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -250,6 +259,8 @@ export type Database = {
           id?: string
           organization_id: string
           created_by?: string | null
+          company_id?: string | null
+          company_name?: string | null
           name: string
           description?: string | null
           buyer_role?: string | null
@@ -260,6 +271,13 @@ export type Database = {
           personality_traits?: string | null
           communication_style?: string | null
           confidential_context?: string | null
+          business_profile_text?: string | null
+          business_profile_file_path?: string | null
+          pain_objections_text?: string | null
+          pain_objections_file_path?: string | null
+          relationship_history_text?: string | null
+          relationship_history_file_path?: string | null
+          chat_model?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -268,6 +286,8 @@ export type Database = {
           id?: string
           organization_id?: string
           created_by?: string | null
+          company_id?: string | null
+          company_name?: string | null
           name?: string
           description?: string | null
           buyer_role?: string | null
@@ -278,6 +298,13 @@ export type Database = {
           personality_traits?: string | null
           communication_style?: string | null
           confidential_context?: string | null
+          business_profile_text?: string | null
+          business_profile_file_path?: string | null
+          pain_objections_text?: string | null
+          pain_objections_file_path?: string | null
+          relationship_history_text?: string | null
+          relationship_history_file_path?: string | null
+          chat_model?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -538,6 +565,10 @@ export type Database = {
           name: string
           stages: Json
           total_points: number
+          sales_process_text: string | null
+          sales_process_file_path: string | null
+          competencies_text: string | null
+          competencies_file_path: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -549,6 +580,10 @@ export type Database = {
           name: string
           stages: Json
           total_points?: number
+          sales_process_text?: string | null
+          sales_process_file_path?: string | null
+          competencies_text?: string | null
+          competencies_file_path?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -560,9 +595,46 @@ export type Database = {
           name?: string
           stages?: Json
           total_points?: number
+          sales_process_text?: string | null
+          sales_process_file_path?: string | null
+          competencies_text?: string | null
+          competencies_file_path?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      scenario_types: {
+        Row: {
+          id: string
+          organization_id: string
+          key: string
+          label: string
+          description: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          key: string
+          label: string
+          description: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          key?: string
+          label?: string
+          description?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
         }
         Relationships: []
       }

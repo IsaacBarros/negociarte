@@ -27,14 +27,35 @@ interface Profile {
   histories: History[]
 }
 
+interface ClientOption {
+  id: string
+  name: string
+  company_name: string | null
+  buyer_role: string | null
+  chat_model: string | null
+}
+
+interface StyleOption {
+  id: string
+  name: string
+}
+
+interface ScenarioTypeOption {
+  key: string
+  label: string
+}
+
 interface Props {
   companyId: string
   projectProductContext?: string | null
   profiles: Profile[]
   sellers: Seller[]
+  clients: ClientOption[]
+  styles: StyleOption[]
+  scenarioTypes: ScenarioTypeOption[]
 }
 
-const scenarioTypeLabel: Record<string, string> = {
+const defaultScenarioTypeLabel: Record<string, string> = {
   discovery: 'Descoberta',
   objection_handling: 'Objeções',
   closing: 'Fechamento',
@@ -100,12 +121,16 @@ function HistoryRow({
   )
 }
 
-function ScenarioCard({ profile, sellers }: { profile: Profile; sellers: Seller[] }) {
+function ScenarioCard({ profile, sellers, scenarioTypes }: { profile: Profile; sellers: Seller[]; scenarioTypes: ScenarioTypeOption[] }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const difficulty = profile.difficulty_level
     ? difficultyLabel[profile.difficulty_level]
     : undefined
-  const typeLabel = profile.scenario_type ? scenarioTypeLabel[profile.scenario_type] : null
+  const typeLabel = profile.scenario_type
+    ? (scenarioTypes.find((t) => t.key === profile.scenario_type)?.label ??
+        defaultScenarioTypeLabel[profile.scenario_type] ??
+        profile.scenario_type)
+    : null
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white">
@@ -175,7 +200,7 @@ function ScenarioCard({ profile, sellers }: { profile: Profile; sellers: Seller[
   )
 }
 
-export function ScenariosSection({ companyId, projectProductContext, profiles, sellers }: Props) {
+export function ScenariosSection({ companyId, projectProductContext, profiles, sellers, clients, styles, scenarioTypes }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
@@ -212,7 +237,7 @@ export function ScenariosSection({ companyId, projectProductContext, profiles, s
       ) : (
         <div className="space-y-3">
           {profiles.map((profile) => (
-            <ScenarioCard key={profile.id} profile={profile} sellers={sellers} />
+            <ScenarioCard key={profile.id} profile={profile} sellers={sellers} scenarioTypes={scenarioTypes} />
           ))}
         </div>
       )}
@@ -222,6 +247,9 @@ export function ScenariosSection({ companyId, projectProductContext, profiles, s
         onOpenChange={setDialogOpen}
         companyId={companyId}
         projectProductContext={projectProductContext}
+        clients={clients}
+        styles={styles}
+        scenarioTypes={scenarioTypes}
       />
     </>
   )
