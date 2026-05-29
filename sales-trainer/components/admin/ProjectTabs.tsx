@@ -1,10 +1,11 @@
 import Link from 'next/link'
 
 const TABS = [
-  { key: 'knowledge', label: 'Empresa & Docs' },
-  { key: 'customers', label: 'Clientes' },
+  { key: 'context', label: 'Contexto' },
+  { key: 'scenarios', label: 'Cenários' },
   { key: 'styles', label: 'Estilos' },
   { key: 'criteria', label: 'Critérios' },
+  { key: 'access', label: 'Acesso' },
 ] as const
 
 interface Props {

@@ -76,22 +76,29 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
           </ProfileFormField>
         )}
 
-        <ProfileFormField
-          label="Modelo de IA"
-          description="LLM que interpretará o cliente neste cenário. O padrão usa a configuração global."
-          error={errors.chat_model?.message}
-        >
-          <select
-            {...register('chat_model', { setValueAs: (value) => value || null })}
-            className={`${inputClass} bg-white`}
-          >
-            {SELECTABLE_CHAT_MODELS.map((model) => (
-              <option key={model.modelId ?? '__default__'} value={model.modelId ?? ''}>
-                {model.label}
-              </option>
-            ))}
-          </select>
-        </ProfileFormField>
+        <details className="group">
+          <summary className="cursor-pointer text-xs text-neutral-400 hover:text-neutral-600 select-none">
+            Configurações avançadas
+          </summary>
+          <div className="mt-3">
+            <ProfileFormField
+              label="Modelo de IA"
+              description="LLM que interpretará o cliente neste cenário. O padrão usa a configuração global."
+              error={errors.chat_model?.message}
+            >
+              <select
+                {...register('chat_model', { setValueAs: (value) => value || null })}
+                className={`${inputClass} bg-white`}
+              >
+                {SELECTABLE_CHAT_MODELS.map((model) => (
+                  <option key={model.modelId ?? '__default__'} value={model.modelId ?? ''}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+            </ProfileFormField>
+          </div>
+        </details>
 
         <ProfileFormField
           label="Briefing visível ao vendedor"
@@ -105,7 +112,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('visible_briefing')}
             rows={4}
             className={textareaClass}
-            placeholder="O que o vendedor sabe antes de iniciar a simulação."
           />
         </ProfileFormField>
 
@@ -121,7 +127,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('visit_objective')}
             rows={3}
             className={textareaClass}
-            placeholder="Resultado esperado: diagnóstico, demo, proposta, próximo passo..."
           />
         </ProfileFormField>
 
@@ -137,7 +142,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('success_criteria')}
             rows={3}
             className={textareaClass}
-            placeholder="Como saber se o vendedor conduziu bem a visita."
           />
         </ProfileFormField>
       </ProfileSectionCard>
@@ -146,11 +150,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
         title="Base interna"
         description="Informações usadas pela simulação e avaliação. O participante não vê este conteúdo."
       >
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Briefing visível aparece para o vendedor. Base interna orienta o avatar e a avaliação,
-          mas não deve ser revelada durante a conversa.
-        </div>
-
         <ProfileFormField
           label="Contexto confidencial"
           description="Informação oculta usada pelo avatar. Não aparece para o vendedor."
@@ -163,7 +162,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('confidential_context')}
             rows={3}
             className={textareaClass}
-            placeholder="Informações ocultas do cliente, limites reais, política interna, riscos."
           />
         </ProfileFormField>
 
@@ -179,7 +177,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('sales_process_context')}
             rows={3}
             className={textareaClass}
-            placeholder="Etapas, perguntas e condução esperada do vendedor."
           />
         </ProfileFormField>
 
@@ -195,7 +192,6 @@ export function StepScenario({ form, suggestField, suggestingField, behaviorStyl
             {...register('sales_competencies_context')}
             rows={3}
             className={textareaClass}
-            placeholder="Descoberta, escuta, argumentação, negociação, fechamento..."
           />
         </ProfileFormField>
 

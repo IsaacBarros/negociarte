@@ -191,7 +191,7 @@ export function SessionsTable({ sessions, sellers, profiles, feedbacks }: Props)
                   {score !== undefined && score !== null && (
                     <div>
                       <p className="text-xs text-neutral-400">Nota</p>
-                      <p className="text-sm font-semibold">{score}/10</p>
+                      <p className="text-sm font-semibold">{score}/200</p>
                     </div>
                   )}
                   {s.total_tokens > 0 && (

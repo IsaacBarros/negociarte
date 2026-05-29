@@ -10,7 +10,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { updateCompanyContext, createCustomerQuick } from '@/lib/actions/scenario-entities'
+import {
+  updateCompanyContext,
+  createCustomerQuick,
+  createProfileQuick,
+} from '@/lib/actions/scenario-entities'
 import { createBehaviorStyle } from '@/lib/actions/behavior-styles'
 import type { KnowledgeAnalysis } from '@/lib/schemas/analyze-knowledge'
 
@@ -18,6 +22,7 @@ interface Props {
   companyId: string
   companyName: string
   activeDocCount: number
+  projectProductContext?: string | null
 }
 
 type DialogState = 'idle' | 'analyzing' | 'review' | 'saving' | 'done' | 'error'
@@ -32,7 +37,12 @@ interface CompanyFields {
   marketing_strategy: string
 }
 
-export function AnalyzeKnowledgeDialog({ companyId, companyName, activeDocCount }: Props) {
+export function AnalyzeKnowledgeDialog({
+  companyId,
+  companyName,
+  activeDocCount,
+  projectProductContext,
+}: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<DialogState>('idle')
@@ -106,45 +116,62 @@ export function AnalyzeKnowledgeDialog({ companyId, companyName, activeDocCount 
     setState('saving')
 
     try {
-      const tasks: Promise<unknown>[] = []
+      // 1. Atualizar campos da empresa e criar estilos em paralelo
+      const stylePromises = analysis.styles
+        .filter((_, i) => selectedStyles[i])
+        .map((style) =>
+          createBehaviorStyle({
+            name: style.name,
+            description: style.description,
+            simulation_guidance: style.simulation_guidance,
+            is_active: true,
+          }),
+        )
 
-      // 1. Atualizar campos da empresa
-      tasks.push(updateCompanyContext(companyId, companyFields))
+      await Promise.all([updateCompanyContext(companyId, companyFields), ...stylePromises])
 
-      // 2. Criar clientes selecionados
-      analysis.customers.forEach((customer, i) => {
-        if (selectedCustomers[i]) {
-          tasks.push(
-            createCustomerQuick({
-              name: customer.name,
-              buyer_role: customer.buyer_role,
-              description: customer.description,
-              pain_points: customer.pain_points,
-              objections: customer.objections,
-              budget_context: customer.budget_context,
-              communication_style: customer.communication_style,
-            }),
-          )
-        }
-      })
+      // 2. Para cada cliente selecionado: criar scenario_customer → customer_profile
+      const selectedCustomerList = analysis.customers.filter((_, i) => selectedCustomers[i])
+      for (const customer of selectedCustomerList) {
+        const created = await createCustomerQuick({
+          name: customer.name,
+          buyer_role: customer.buyer_role,
+          description: customer.description,
+          pain_points: customer.pain_points,
+          objections: customer.objections,
+          budget_context: customer.budget_context,
+          communication_style: customer.communication_style,
+        })
 
-      // 3. Criar estilos selecionados
-      analysis.styles.forEach((style, i) => {
-        if (selectedStyles[i]) {
-          tasks.push(
-            createBehaviorStyle({
-              name: style.name,
-              description: style.description,
-              simulation_guidance: style.simulation_guidance,
-              is_active: true,
-            }),
-          )
-        }
-      })
+        await createProfileQuick({
+          company_id: companyId,
+          customer_id: created.id,
+          name: `${customer.name} — ${customer.buyer_role}`,
+          buyer_role: customer.buyer_role,
+          description: customer.description,
+          pain_points: customer.pain_points,
+          objections: customer.objections,
+          budget_context: customer.budget_context,
+          decision_authority: customer.decision_authority,
+          personality_traits: customer.personality_traits,
+          communication_style: customer.communication_style,
+          product_context: projectProductContext ?? companyFields.product_context,
+          market_situation: companyFields.market_situation,
+          competition_context: companyFields.competition_context,
+          marketing_strategy: companyFields.marketing_strategy,
+          visible_briefing: customer.visible_briefing,
+          visit_objective: customer.visit_objective,
+          success_criteria: customer.success_criteria,
+          confidential_context: customer.confidential_context,
+          sales_process_context: customer.sales_process_context,
+          sales_competencies_context: customer.sales_competencies_context,
+          scenario_type: 'discovery',
+          difficulty_level: 'easy',
+          is_active: true,
+        })
+      }
 
-      await Promise.all(tasks)
       setState('done')
-      router.refresh()
     } catch (err) {
       setState('error')
       setErrorMsg(err instanceof Error ? err.message : 'Erro ao salvar.')
@@ -298,12 +325,18 @@ export function AnalyzeKnowledgeDialog({ companyId, companyName, activeDocCount 
             <div className="mt-8 flex flex-col items-center gap-4 py-8">
               <CheckCircle2 className="size-12 text-green-500" />
               <p className="text-sm font-medium text-neutral-800">Dados aplicados com sucesso!</p>
+              <p className="text-xs text-neutral-500">
+                Os cenários gerados estão disponíveis na aba Cenários.
+              </p>
               <button
                 type="button"
-                onClick={handleClose}
+                onClick={() => {
+                  handleClose()
+                  router.push(`/admin/companies/${companyId}?tab=scenarios`)
+                }}
                 className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
               >
-                Fechar
+                Ver cenários →
               </button>
             </div>
           )}

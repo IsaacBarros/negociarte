@@ -32,7 +32,15 @@ _Prompts, modelos, avaliação de qualidade, custo._
 
 _Fluxo de autenticação, papéis admin/seller, onboarding._
 
-<!-- ex.: [Fluxo de onboarding de nova organização](auth/onboarding.md) -->
+- [Join por link de convite — padrão SECURITY DEFINER pré-auth](auth/join-por-link.md) — como resolver empresa e criar seller antes de ter sessão ativa; quando usar SECURITY DEFINER em vez de policy RLS pública
+
+---
+
+## Arquitetura
+
+_Integrações, pipelines de dados, padrões de Route Handlers._
+
+- [Knowledge base por empresa](arquitetura/knowledge-base.md) — fluxo de upload/análise de docs; por que knowledge NÃO injeta no chat automaticamente sem recompilar o perfil; dependências servidor-only
 
 ---
 

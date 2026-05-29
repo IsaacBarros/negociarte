@@ -18,15 +18,22 @@ const RequestSchema = z.object({
 const MAX_INPUT_CHARS = 80_000
 
 const SYSTEM_PROMPT = `Você é um especialista em treinamento de vendas B2B.
-Analise os documentos da empresa fornecidos e extraia informações estruturadas para configurar um simulador de vendas.
+Analise os documentos da EMPRESA VENDEDORA fornecidos e extraia informações estruturadas para configurar um simulador de vendas.
+
+Os documentos descrevem a empresa que VENDE (seu produto, mercado, estratégia). As personas geradas representam os COMPRADORES TÍPICOS que essa empresa encontra no mercado.
 
 Gere:
-1. Contexto da empresa (mercado, produtos, estratégia, concorrência)
-2. 2-3 personas de compradores B2B típicos deste mercado, com dores, objeções e perfil de decisão
-3. 2-3 estilos comportamentais de compradores comuns neste contexto
+1. Contexto da empresa vendedora (mercado, produtos, estratégia, concorrência)
+2. 2-3 personas de compradores B2B típicos para esta empresa vender, com:
+   - Perfil completo do comprador (cargo, dores, objeções, orçamento, autoridade de decisão)
+   - Briefing visível: o que o vendedor sabe antes da visita
+   - Objetivo da visita e critério de sucesso
+   - Contexto confidencial: o que o comprador pensa mas não diz diretamente
+   - Processo de vendas esperado e competências a avaliar
+3. 2-3 estilos comportamentais de compradores comuns neste setor
 
-Baseie-se nas informações dos documentos. Para campos sem informação explícita, gere sugestões coerentes com o setor identificado.
-Responda em português.`
+Baseie-se nos documentos. Para campos sem informação explícita, gere sugestões coerentes com o setor.
+Todos os textos em português do Brasil.`
 
 export async function POST(request: Request) {
   let user: Awaited<ReturnType<typeof requireAdmin>>

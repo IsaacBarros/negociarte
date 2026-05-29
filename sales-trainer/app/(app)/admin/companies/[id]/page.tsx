@@ -6,18 +6,17 @@ import { updateScenarioCompany } from '@/lib/actions/scenario-entities'
 import { ScenarioEntityForm } from '@/components/profiles/ScenarioEntityForm'
 import { KnowledgeDocList } from '@/components/admin/KnowledgeDocList'
 import { ProjectTabs } from '@/components/admin/ProjectTabs'
-import { SellerLinkerSection } from '@/components/admin/SellerLinkerSection'
-import { CustomerHistorySection } from '@/components/admin/CustomerHistorySection'
+import { ScenariosSection } from '@/components/admin/ScenariosSection'
+import { AccessSection } from '@/components/admin/AccessSection'
 import { BehaviorStylesSection } from '@/components/admin/BehaviorStylesSection'
 import { CriteriaManagerSection } from '@/components/admin/CriteriaManagerSection'
 import { DeleteCompanyButton } from '@/components/admin/DeleteCompanyButton'
-import { JoinCodeSection } from '@/components/admin/JoinCodeSection'
 import type { ScenarioCompanyInput } from '@/lib/schemas/scenario-entities'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Projeto — Negociarte' }
 
-const VALID_TABS = ['knowledge', 'customers', 'styles', 'criteria'] as const
+const VALID_TABS = ['context', 'scenarios', 'styles', 'criteria', 'access'] as const
 type Tab = (typeof VALID_TABS)[number]
 
 export default async function CompanyPage({
@@ -29,10 +28,10 @@ export default async function CompanyPage({
 }) {
   const { id } = await params
   const sp = await searchParams
-  const rawTab = typeof sp.tab === 'string' ? sp.tab : 'knowledge'
+  const rawTab = typeof sp.tab === 'string' ? sp.tab : 'context'
   const tab: Tab = (VALID_TABS as readonly string[]).includes(rawTab)
     ? (rawTab as Tab)
-    : 'knowledge'
+    : 'context'
 
   const user = await requireAdmin()
   const supabase = await createClient()
@@ -46,7 +45,7 @@ export default async function CompanyPage({
 
   if (!company) notFound()
 
-  // ── Contagens para o dialog de exclusão ───────────────────────────────────
+  // Contagens para o dialog de exclusão
   const { data: companyProfileIds } = await supabase
     .from('customer_profiles')
     .select('id')
@@ -63,44 +62,20 @@ export default async function CompanyPage({
         .eq('organization_id', user.organization_id)
     : { count: 0 }
 
-  // ── Tab 1 — knowledge ──────────────────────────────────────────────────────
+  // ── Tab: context ──────────────────────────────────────────────────────────
 
-  const [{ data: knowledgeDocs }, { data: allSellers }, { data: linkedSellerRows }] =
-    await Promise.all([
-      tab === 'knowledge'
-        ? supabase
-            .from('company_knowledge_docs')
-            .select('*')
-            .eq('company_id', id)
-            .order('created_at', { ascending: true })
-        : { data: null },
-      tab === 'knowledge'
-        ? supabase
-            .from('profiles')
-            .select('id, full_name, email')
-            .eq('organization_id', user.organization_id)
-            .eq('role', 'seller')
-            .order('full_name', { ascending: true })
-        : { data: null },
-      tab === 'knowledge'
-        ? supabase
-            .from('seller_companies')
-            .select('seller_id')
-            .eq('company_id', id)
-        : { data: null },
-    ])
-
-  const linkedSellerIds = (linkedSellerRows ?? []).map((r) => (r as { seller_id: string }).seller_id)
-
-  // ── Tab 2 — customers ─────────────────────────────────────────────────────
-  // Fetch seller IDs linked to this company, then fetch their profiles separately
-  // (Supabase join omitted: Relationships is [] in generated types)
-
-  const { data: linkedSellerCompanyRows } = tab === 'customers'
+  const { data: knowledgeDocs } = tab === 'context'
     ? await supabase
-        .from('seller_companies')
-        .select('seller_id')
+        .from('company_knowledge_docs')
+        .select('*')
         .eq('company_id', id)
+        .order('created_at', { ascending: true })
+    : { data: null }
+
+  // ── Tab: scenarios ────────────────────────────────────────────────────────
+
+  const { data: linkedSellerCompanyRows } = tab === 'scenarios'
+    ? await supabase.from('seller_companies').select('seller_id').eq('company_id', id)
     : { data: null }
 
   const linkedSellerIdsCust = (linkedSellerCompanyRows ?? []).map(
@@ -109,21 +84,18 @@ export default async function CompanyPage({
 
   const [{ data: profiles }, { data: linkedSellersForHistory }, { data: sellerHistories }] =
     await Promise.all([
-      tab === 'customers'
+      tab === 'scenarios'
         ? supabase
             .from('customer_profiles')
-            .select('id, name, buyer_role, customer_id')
+            .select('id, name, buyer_role, customer_id, scenario_type, difficulty_level')
             .eq('company_id', id)
             .eq('is_active', true)
             .order('name', { ascending: true })
         : { data: null },
-      tab === 'customers' && linkedSellerIdsCust.length > 0
-        ? supabase
-            .from('profiles')
-            .select('id, full_name, email')
-            .in('id', linkedSellerIdsCust)
+      tab === 'scenarios' && linkedSellerIdsCust.length > 0
+        ? supabase.from('profiles').select('id, full_name, email').in('id', linkedSellerIdsCust)
         : { data: null },
-      tab === 'customers'
+      tab === 'scenarios'
         ? supabase
             .from('seller_customer_history')
             .select('seller_id, customer_id, history_text')
@@ -131,7 +103,27 @@ export default async function CompanyPage({
         : { data: null },
     ])
 
-  // ── Tab 3 — styles ────────────────────────────────────────────────────────
+  // ── Tab: access ───────────────────────────────────────────────────────────
+
+  const [{ data: allSellers }, { data: linkedSellerRows }] = await Promise.all([
+    tab === 'access'
+      ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('organization_id', user.organization_id)
+          .eq('role', 'seller')
+          .order('full_name', { ascending: true })
+      : { data: null },
+    tab === 'access'
+      ? supabase.from('seller_companies').select('seller_id').eq('company_id', id)
+      : { data: null },
+  ])
+
+  const linkedSellerIds = (linkedSellerRows ?? []).map(
+    (r) => (r as { seller_id: string }).seller_id,
+  )
+
+  // ── Tab: styles ───────────────────────────────────────────────────────────
 
   const { data: behaviorStyles } = tab === 'styles'
     ? await supabase
@@ -141,7 +133,7 @@ export default async function CompanyPage({
         .order('name', { ascending: true })
     : { data: null }
 
-  // ── Tab 4 — criteria ──────────────────────────────────────────────────────
+  // ── Tab: criteria ─────────────────────────────────────────────────────────
 
   const { data: activeCriteriaRaw } = tab === 'criteria'
     ? await supabase
@@ -154,20 +146,23 @@ export default async function CompanyPage({
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
-  type ProfileRaw = { id: string; name: string; buyer_role: string | null; customer_id: string | null }
+  type ProfileRaw = {
+    id: string
+    name: string
+    buyer_role: string | null
+    customer_id: string | null
+    scenario_type: string | null
+    difficulty_level: string | null
+  }
   type HistoryRaw = { seller_id: string; customer_id: string; history_text: string }
-
-  // Sellers linked to this company (for the history section)
   type SellerProfile = { id: string; full_name: string | null; email: string }
+
   const linkedSellers = (linkedSellersForHistory ?? []) as SellerProfile[]
 
   const profilesWithHistories = (profiles ?? []).map((p) => {
     const pr = p as ProfileRaw
     const histories = (sellerHistories ?? [])
-      .filter((h) => {
-        const hr = h as HistoryRaw
-        return hr.customer_id === pr.customer_id
-      })
+      .filter((h) => (h as HistoryRaw).customer_id === pr.customer_id)
       .map((h) => {
         const hr = h as HistoryRaw
         return { seller_id: hr.seller_id, history_text: hr.history_text }
@@ -175,7 +170,6 @@ export default async function CompanyPage({
     return { ...pr, histories }
   })
 
-  // Company initial data for edit form
   const initialData: Partial<ScenarioCompanyInput> = {
     name: company.name,
     description: company.description ?? '',
@@ -230,85 +224,49 @@ export default async function CompanyPage({
         <ProjectTabs companyId={id} activeTab={tab} />
       </div>
 
-      {/* ── Tab 1: Empresa & Base de Conhecimento ─────────────────────────── */}
-      {tab === 'knowledge' && (
-        <div className="space-y-8">
-          {/* Knowledge docs — primeiro para alimentar a análise IA */}
+      {/* ── Tab: Contexto ─────────────────────────────────────────────────── */}
+      {tab === 'context' && (
+        <div className="space-y-10">
+          {/* 1. O que você vende */}
           <section>
-            <h2 className="mb-1 text-sm font-semibold text-neutral-700">
-              Base de conhecimento
-            </h2>
+            <h2 className="mb-1 text-sm font-semibold text-neutral-700">O que a empresa vende</h2>
             <p className="mb-4 text-xs text-neutral-500">
-              Suba PDFs, adicione links ou cole textos. A IA pode então analisar esses
-              documentos e pré-preencher os dados da empresa, personas e estilos.
+              Preencha o contexto de produto e mercado. Esses dados são injetados em todos os
+              cenários de treino deste projeto.
+            </p>
+            <ScenarioEntityForm kind="company" action={updateAction} initialData={initialData} />
+          </section>
+
+          {/* 2. Base de conhecimento */}
+          <section>
+            <h2 className="mb-1 text-sm font-semibold text-neutral-700">Base de conhecimento</h2>
+            <p className="mb-4 text-xs text-neutral-500">
+              Suba PDFs, adicione links ou cole textos. A IA analisa e pré-preenche os dados acima
+              e gera cenários prontos para treino na aba Cenários.
             </p>
             <KnowledgeDocList
               companyId={id}
               companyName={company.name}
               initialDocs={knowledgeDocs ?? []}
-            />
-          </section>
-
-          {/* Company edit form */}
-          <section>
-            <h2 className="mb-4 text-sm font-semibold text-neutral-700">Dados da empresa</h2>
-            <ScenarioEntityForm kind="company" action={updateAction} initialData={initialData} />
-          </section>
-
-          {/* Join link para vendedores */}
-          <section>
-            <h2 className="mb-1 text-sm font-semibold text-neutral-700">
-              Link de acesso do vendedor
-            </h2>
-            <p className="mb-4 text-xs text-neutral-500">
-              Envie este link para os vendedores. Ao acessar, eles são automaticamente
-              vinculados ao projeto e podem começar a treinar.
-            </p>
-            <JoinCodeSection companyId={id} initialCode={company.join_code} />
-          </section>
-
-          {/* Seller linking manual */}
-          <section>
-            <h2 className="mb-1 text-sm font-semibold text-neutral-700">
-              Vendedores com acesso
-            </h2>
-            <p className="mb-4 text-xs text-neutral-500">
-              Vendedores vinculados por link ou adicionados manualmente aqui.
-            </p>
-            <SellerLinkerSection
-              companyId={id}
-              sellers={(allSellers ?? []) as { id: string; full_name: string | null; email: string }[]}
-              linkedSellerIds={linkedSellerIds}
+              projectProductContext={company.product_context}
             />
           </section>
         </div>
       )}
 
-      {/* ── Tab 2: Clientes ───────────────────────────────────────────────── */}
-      {tab === 'customers' && (
+      {/* ── Tab: Cenários ─────────────────────────────────────────────────── */}
+      {tab === 'scenarios' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-700">Clientes e personas</h2>
-              <p className="mt-0.5 text-xs text-neutral-500">
-                Histórico de relacionamento por vendedor. Expanda um cliente para editar.
-              </p>
-            </div>
-            <Link
-              href={`/admin/profiles/new`}
-              className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50"
-            >
-              + Novo cenário
-            </Link>
-          </div>
-          <CustomerHistorySection
+          <ScenariosSection
+            companyId={id}
+            projectProductContext={company.product_context}
             profiles={profilesWithHistories}
             sellers={linkedSellers}
           />
         </div>
       )}
 
-      {/* ── Tab 3: Estilos de Comportamento ──────────────────────────────── */}
+      {/* ── Tab: Estilos ──────────────────────────────────────────────────── */}
       {tab === 'styles' && (
         <div className="space-y-4">
           <div>
@@ -330,7 +288,7 @@ export default async function CompanyPage({
         </div>
       )}
 
-      {/* ── Tab 4: Critérios de Avaliação ─────────────────────────────────── */}
+      {/* ── Tab: Critérios ────────────────────────────────────────────────── */}
       {tab === 'criteria' && (
         <div className="space-y-4">
           <div>
@@ -359,6 +317,16 @@ export default async function CompanyPage({
             }
           />
         </div>
+      )}
+
+      {/* ── Tab: Acesso ───────────────────────────────────────────────────── */}
+      {tab === 'access' && (
+        <AccessSection
+          companyId={id}
+          joinCode={company.join_code}
+          sellers={(allSellers ?? []) as { id: string; full_name: string | null; email: string }[]}
+          linkedSellerIds={linkedSellerIds}
+        />
       )}
     </div>
   )

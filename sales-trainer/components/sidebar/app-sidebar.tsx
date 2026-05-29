@@ -73,7 +73,6 @@ export function AppSidebar({ profile }: { profile: Profile }) {
             </Link>
             <div className="ml-3 border-l border-neutral-200 pl-2">
               {[
-                { href: '/admin/profiles', label: 'Todos os cenários' },
                 { href: '/admin/sessions', label: 'Sessões' },
                 { href: '/admin/analytics', label: 'Analytics' },
               ].map((item) => {

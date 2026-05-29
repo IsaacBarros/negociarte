@@ -192,6 +192,139 @@ Implementado um gerador de personas end-to-end acionado por um botão "Gerar per
 - ~~Typecheck: confirmado limpo (`tsc --noEmit` sem erros).~~ ✓
 - Testar o fluxo completo em desenvolvimento (criar persona → revisar campos → salvar → verificar system_prompt compilado).
 
+---
+
+## 2026-05-28 — Expansão massiva do produto (migrations 0012–0018) + pendências abertas
+
+**Categoria:** Arquitetura | Banco | IA | Auth | UI | Bug
+
+### O que foi feito (commit 54115cc, 2026-05-27)
+
+A sessão anterior entregou o maior commit do projeto até agora: 7.248 linhas adicionadas em 70 arquivos. Features principais:
+
+- **Knowledge base por empresa** — tabela `company_knowledge_docs`, upload de PDF/URL + compressão IA via `/api/knowledge/*`. Novas dependências: `pdf-parse`, `mammoth`.
+- **Vínculo seller ↔ empresa** — tabela `seller_companies`. Admin pode associar sellers a empresas-cenário. Sellers só veem perfis das empresas às quais estão vinculados.
+- **Histórico seller ↔ cliente** — tabela `seller_customer_history`. Sessões anteriores ficam acessíveis ao seller antes do briefing.
+- **Critérios de avaliação configuráveis** — tabela `evaluation_criteria` com `stages JSONB`. O evaluator agora busca os critérios da org antes de chamar o LLM. Se nenhum critério existir, usa fallback padrão (confirmar se o fallback está implementado em `evaluator.ts`).
+- **Objetivo da visita por sessão** — coluna `chosen_objective` em `training_sessions`, `available_objectives` em `customer_profiles`. Seller escolhe o objetivo no `PreSessionForm` antes do chat.
+- **Join por link de convite** — coluna `join_code` em `scenario_companies`. Rota `/join/[code]` + `/api/auth/signup-seller` cria seller já vinculado à empresa, sem precisar de convite manual pelo admin.
+- **Admin refatorado** — `/admin/companies/[id]` agora tem 7 abas: Perfis, Sessões, Vendedores, Histórico, Critérios, Conhecimento, Acesso (join code).
+
+### Novo fluxo do seller
+
+```
+/join/[code]            → signup automático vinculado à empresa
+/train/welcome          → boas-vindas para seller recém-cadastrado
+/train                  → lista de perfis; detecta sessão ativa e mostra banner "Continuar sessão"
+/train/[sessionId]/briefing → PreSessionForm: escolhe objetivo; vê contexto do cliente
+/train/[sessionId]      → chat
+PostSessionActions      → após encerrar: ações de próxima sessão / ver feedback
+```
+
+### Bug crítico encontrado: número de migration duplicado
+
+`0018_admin_delete_companies.sql` e `0018_project_join_code.sql` — **dois arquivos com prefixo 0018**. O Supabase CLI ordena migrations por nome de arquivo; ambos rodam (em ordem alfabética), mas o versionamento está incorreto. O arquivo de delete de empresas deveria ser `0017_*` (ou renumerado). Risco: se o CLI comparar por número de versão, pode pular ou conflitar uma das migrations.
+
+### Pendência crítica aberta: `scenario-entities.ts` modificado sem commit
+
+O arquivo `lib/actions/scenario-entities.ts` tem 3 mudanças não commitadas:
+1. `import { randomUUID } from 'crypto'`
+2. `join_code: randomUUID().replace(/-/g, '')` em `createScenarioCompany`
+3. `join_code: randomUUID().replace(/-/g, '')` em `createCompanyQuick`
+
+Essas mudanças são **necessárias** — a migration 0018_project_join_code torna `join_code NOT NULL`. Sem elas, qualquer insert de nova empresa via Server Action falharia com constraint violation. Precisa ser commitado.
+
+### Padrões novos identificados
+
+- **`localCompanies`/`localCustomers` em estado local**: listas de entidades chegam como props do servidor, mas são convertidas em `useState` para permitir append de entidades criadas inline (QuickCreate / GeneratePersona) sem `router.refresh()` que resetaria o formulário.
+- **Múltiplos Route Handlers de IA**: o projeto passou de 1 rota (`/api/chat`) para um conjunto de rotas especializadas: `/api/ai/generate-persona`, `/api/ai/parse-criteria`, `/api/ai/parse-behavior-style`, `/api/ai/analyze-knowledge`, `/api/evaluate-session`. Cada uma com `maxDuration` configurado.
+- **Funções SECURITY DEFINER para lookup público**: `get_project_by_join_code()` e `get_or_create_seller_company_link()` são públicas (sem RLS) mas usam `SECURITY DEFINER` para acessar dados cross-org de forma controlada. Padrão a ser seguido para qualquer endpoint que precise funcionar antes do usuário estar autenticado.
+
+### Pendências de sessões anteriores ainda abertas
+
+- Indicador de "prompt desatualizado" no `StepPromptPreview` (perfil compilado com dados antigos da empresa/cliente).
+- Radar chart no FeedbackCard (ainda usa barras de progresso).
+- Verificar se evaluator tem fallback quando nenhum critério está cadastrado para a org.
+
+---
+
+## 2026-05-28 — UX knowledge management: criação de projeto + confirmação de delete
+
+**Categoria:** UI | Arquitetura
+
+### Feito
+- `NewCompanyFlow` (client): fluxo 2 fases — fase 1 cria empresa com `createCompanyQuick`, fase 2 mostra `KnowledgeDocList` na mesma página. Resolve: admin descobria knowledge só depois de criar.
+- `KnowledgeDocList`: substituiu `window.confirm()` por estado inline `pendingDeleteId` com "Remover? Sim / Não". Padrão igual ao `JoinCodeSection`.
+- `createScenarioCompany`: `.select('id').single()` para capturar ID após insert (caso de uso futuro). Redirect atualizado para `/admin/companies/[id]?tab=knowledge&setup=1` mas não é mais o caminho principal de criação.
+
+### Decisões
+- `createCompanyQuick` usado na criação (retorna `{id, name}` sem redirect) — não `createScenarioCompany`. Motivo: cliente precisava do ID sem sair da página.
+- Sem `AlertDialog` do shadcn (não instalado). Estado inline é consistente com padrões já usados no projeto.
+
+### Pendente
+- `scenario-entities.ts` ainda tem 3 linhas não commitadas (join_code nos inserts) — commitar antes do próximo deploy.
+- `createScenarioCompany` ficou sem chamadores na UI — pode virar dead code se ninguém mais usar formulário completo de criação.
+- Banner de setup (`?setup=1` no `/admin/companies/[id]`) foi planejado mas não implementado — baixa prioridade.
+- Score "X/10" incorreto na `SessionsTable` (deveria ser 0–200) — não tocado.
+
+---
+
+## 2026-05-29 — Redesign UX admin: 5 abas + fluxo CRM para cenários
+
+**Categoria:** UI | Arquitetura | IA
+
+### Feito
+
+- **5 abas** em `/admin/companies/[id]`: `context | scenarios | styles | criteria | access` (era 4: `knowledge | customers | styles | criteria`). Slugs antigos não existem mais.
+- **Aba Contexto** (`context`): form da empresa PRIMEIRO, depois docs de knowledge. Fluxo linear explícito: "o que vende → sobe docs → IA enriquece".
+- **Aba Cenários** (`scenarios`): `ScenariosSection.tsx` com cards por cenário. Botão "+ Novo cenário" abre `CreateScenarioDialog` inline — sem sair da página.
+- **Aba Acesso** (`access`): join code + seller linker extraídos da aba context. `AccessSection.tsx`.
+- **`CreateScenarioDialog.tsx`**: dialog CRM-like 2 etapas. Etapa 1: nome, cargo, empresa do prospect (diferente do projeto!), descrição do negócio, histórico de relacionamento. Etapa 2: tipo + dificuldade. Chama `/api/ai/generate-scenario-from-contact`.
+- **`/api/ai/generate-scenario-from-contact`**: nova route. Recebe dados do contato B2B + contexto do projeto (product_context, marketing_strategy do projeto = empresa do vendedor). Gera `scenario_customer` + campos completos do `customer_profile`.
+- **`createProfileQuick`** em `scenario-entities.ts`: nova action que compila `system_prompt` no servidor e insere `customer_profile`. Usada por dialog e por AnalyzeKnowledgeDialog.
+- **`AnalyzeKnowledgeDialog`**: agora cria `customer_profiles` completos (não só `scenario_customers`). Redireciona para `?tab=scenarios` após aplicar.
+- **`AnalysisSchema`** expandido com todos os campos de profile (visible_briefing, visit_objective, success_criteria, confidential_context, etc.).
+- **Prompt `analyze-knowledge`** reescrito: documenta que docs são da empresa VENDEDORA, personas são COMPRADORES.
+- **Bug corrigido**: `ScenariosSection` tinha link `/admin/profiles/[id]/edit` (404). Correto: `/admin/profiles/[id]`.
+
+### Decisão-chave
+
+`scenario_companies` = empresa do VENDEDOR (o projeto). Empresa do PROSPECT (o comprador B2B) não vira entidade separada — fica no description do `scenario_customer` e nos campos do `customer_profile` gerados pela IA. `company_id` no profile aponta para o projeto (herda product_context do vendedor).
+
+### Pendente
+
+- `ScenariosSection` não mostra `scenario_type` e `difficulty_level` no card se o perfil foi criado sem esses campos (exibe só o nome). Sem impacto funcional.
+- `CustomerHistorySection` ainda existe mas não é mais usado — pode virar dead code.
+- Indicador de prompt desatualizado no `StepPromptPreview` — ainda aberto.
+- Radar chart no FeedbackCard — ainda aberto.
+- Score "X/10" na `SessionsTable` (deveria ser 0–200) — ainda aberto.
+
+---
+
+## 2026-05-29 — Simplificação cenário + KB autocomplete + filtros analytics
+
+**Categoria:** UI | IA | Bug
+
+### Feito
+
+- **`CreateScenarioDialog`**: 2 etapas → form único. "Perfil do negócio" obrigatório (min 10) → "Contexto adicional" opcional. Validação: só nome, cargo, empresa.
+- **`generate-scenario-from-contact` route**: busca `company_knowledge_docs` ativos (max 30k chars) e injeta no prompt como "BASE DE CONHECIMENTO". `prospect_company_description` virou opcional — KB assume o papel principal.
+- **`StepScenario`**: removido amber box redundante. "Modelo de IA" movido para `<details>` (avançado). Placeholders dos textareas removidos (já explicados pelo `description` do field).
+- **Sidebar**: removido link "Todos os cenários". Cenários só acessíveis dentro de cada projeto.
+- **`CriteriaManagerSection`**: `key` warning corrigido. `<>` sem key → `<Fragment key={...}>` no elemento pai do map. Key saiu do `<tr>` interno para o Fragment.
+- **Analytics**: filtro por projeto igual ao de sessões — `searchParams`, `<form>` GET, `.in('customer_profile_id', profileIds)` para filtrar contagens e feedback.
+
+### Decisões
+
+- KB injetada automaticamente na geração (sem botão manual) — mais simples, usuário não precisa pensar.
+- `noResults` guard antes de queries com `.in()` vazio: Supabase retorna erro com array vazio, curto-circuitar com `Promise.resolve({ count: 0 })` evita o problema.
+
+### Pendente (acumulado)
+
+- Indicador de prompt desatualizado no `StepPromptPreview`
+- Radar chart no FeedbackCard (ainda barras)
+- Fallback no evaluator quando org sem critérios cadastrados
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

@@ -31,12 +31,13 @@ interface Props {
   companyId: string
   companyName: string
   initialDocs: KnowledgeDoc[]
+  projectProductContext?: string | null
 }
 
 const MAX_TEXT_CHARS = 150_000
 const COMPRESS_THRESHOLD = 15_000
 
-export function KnowledgeDocList({ companyId, companyName, initialDocs }: Props) {
+export function KnowledgeDocList({ companyId, companyName, initialDocs, projectProductContext }: Props) {
   const [docs, setDocs] = useState<KnowledgeDoc[]>(initialDocs)
   const [isPending, startTransition] = useTransition()
 
@@ -64,6 +65,9 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs }: Props)
   const [pendingCompress, setPendingCompress] = useState<PendingCompress | null>(null)
   const [compressing, setCompressing] = useState(false)
   const [compressError, setCompressError] = useState<string | null>(null)
+
+  // Confirmação de delete inline
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   // ─── Handlers de upload ───────────────────────────────────────────────────
 
@@ -232,9 +236,9 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs }: Props)
     })
   }
 
-  function handleDelete(docId: string) {
-    if (!confirm('Remover este documento permanentemente?')) return
+  function handleDeleteConfirm(docId: string) {
     if (pendingCompress?.docId === docId) setPendingCompress(null)
+    setPendingDeleteId(null)
     startTransition(async () => {
       await deleteKnowledgeDoc({ doc_id: docId })
       setDocs((prev) => prev.filter((d) => d.id !== docId))
@@ -489,24 +493,47 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs }: Props)
                 </p>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleToggle(doc.id, !doc.is_active)}
-                  disabled={isPending}
-                  title={doc.is_active ? 'Desativar' : 'Ativar'}
-                  className="rounded p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50"
-                >
-                  {doc.is_active ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(doc.id)}
-                  disabled={isPending}
-                  title="Remover"
-                  className="rounded p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                {pendingDeleteId === doc.id ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-red-600">Remover?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteConfirm(doc.id)}
+                      disabled={isPending}
+                      className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Sim
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDeleteId(null)}
+                      className="rounded px-2 py-1 text-xs font-medium text-neutral-500 hover:bg-neutral-100"
+                    >
+                      Não
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(doc.id, !doc.is_active)}
+                      disabled={isPending}
+                      title={doc.is_active ? 'Desativar' : 'Ativar'}
+                      className="rounded p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50"
+                    >
+                      {doc.is_active ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDeleteId(doc.id)}
+                      disabled={isPending}
+                      title="Remover"
+                      className="rounded p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </li>
           ))}
@@ -524,6 +551,7 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs }: Props)
             companyId={companyId}
             companyName={companyName}
             activeDocCount={docs.filter((d) => d.is_active).length}
+            projectProductContext={projectProductContext}
           />
         </div>
         </>

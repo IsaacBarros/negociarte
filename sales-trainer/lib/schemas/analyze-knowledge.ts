@@ -32,9 +32,29 @@ export const AnalysisSchema = z.object({
           .string()
           .describe('Objeções típicas que esta persona levanta durante uma negociação'),
         budget_context: z.string().describe('Contexto orçamentário e processo de aprovação'),
+        decision_authority: z.string().describe('Nível de autoridade de decisão e processo interno'),
+        personality_traits: z.string().describe('Traços de personalidade relevantes para a venda'),
         communication_style: z
           .string()
           .describe('Estilo de comunicação (ex: Analítico, Direto, Colaborativo)'),
+        visible_briefing: z
+          .string()
+          .describe('O que o vendedor sabe antes de entrar na simulação com esta persona'),
+        visit_objective: z
+          .string()
+          .describe('Objetivo esperado da visita de vendas com esta persona'),
+        success_criteria: z
+          .string()
+          .describe('Critério para considerar a simulação bem-sucedida'),
+        confidential_context: z
+          .string()
+          .describe('Informações que o avatar sabe mas não revela diretamente ao vendedor'),
+        sales_process_context: z
+          .string()
+          .describe('Etapas e comportamentos esperados do processo de vendas'),
+        sales_competencies_context: z
+          .string()
+          .describe('Competências de vendas que serão avaliadas nesta simulação'),
       }),
     )
     .min(1)

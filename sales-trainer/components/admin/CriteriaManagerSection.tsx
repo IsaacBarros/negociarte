@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, Fragment } from 'react'
 import { createEvaluationCriteria } from '@/lib/actions/evaluation-criteria'
 import { Wand2, CheckCircle } from 'lucide-react'
 
@@ -102,8 +102,8 @@ export function CriteriaManagerSection({ companyId, activeCriteria }: Props) {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {activeCriteria.stages.map((stage) => (
-                  <>
-                    <tr key={`stage-${stage.key}`} className="bg-neutral-50">
+                  <Fragment key={`stage-${stage.key}`}>
+                    <tr className="bg-neutral-50">
                       <td className="px-4 py-2 font-medium text-neutral-700" colSpan={2}>
                         {stage.label}
                       </td>
@@ -116,7 +116,7 @@ export function CriteriaManagerSection({ companyId, activeCriteria }: Props) {
                         </td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -204,8 +204,8 @@ export function CriteriaManagerSection({ companyId, activeCriteria }: Props) {
                     </thead>
                     <tbody className="divide-y divide-blue-50">
                       {parsed.stages.map((stage) => (
-                        <>
-                          <tr key={`pstage-${stage.key}`} className="bg-blue-50/50">
+                        <Fragment key={`pstage-${stage.key}`}>
+                          <tr className="bg-blue-50/50">
                             <td className="px-3 py-2 font-medium text-blue-800" colSpan={2}>
                               {stage.label}
                             </td>
@@ -218,7 +218,7 @@ export function CriteriaManagerSection({ companyId, activeCriteria }: Props) {
                               </td>
                             </tr>
                           ))}
-                        </>
+                        </Fragment>
                       ))}
                     </tbody>
                     <tfoot className="border-t border-blue-100 bg-blue-50">
