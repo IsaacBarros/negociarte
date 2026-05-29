@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { regenerateJoinCode } from '@/lib/actions/project-members'
 
 interface JoinCodeSectionProps {
@@ -13,11 +13,11 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
   const [copied, setCopied] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [origin, setOrigin] = useState('')
 
-  const origin =
-    typeof window !== 'undefined'
-      ? window.location.origin
-      : 'https://app.negociarte.com'
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   const joinLink = `${origin}/join/${code}`
 
