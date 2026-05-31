@@ -1,3 +1,5 @@
+import path from 'path'
+
 const MAX_PDF_TEXT_CHARS = 150_000
 
 /**
@@ -10,19 +12,25 @@ export async function extractPdfText(buffer: Buffer): Promise<{ text: string; tr
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore — pdfjs-dist legacy build has no bundled type declarations for this path
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs') as typeof import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+  // pdfjs-dist v5 exige caminho válido para o worker — string vazia quebra em v5
+  pdfjsLib.GlobalWorkerOptions.workerSrc = path.resolve(
+    'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'
+  )
 
-  const loadingTask = pdfjsLib.getDocument({
+  const docParams: Parameters<typeof pdfjsLib.getDocument>[0] = {
     data: new Uint8Array(buffer),
     useSystemFonts: true,
     disableFontFace: true,
     isEvalSupported: false,
-    canvasFactory: {
-      create: (_w: number, _h: number) => ({ canvas: null as unknown as HTMLCanvasElement, context: null as unknown as CanvasRenderingContext2D }),
-      reset: () => {},
-      destroy: () => {},
-    },
-  })
+  }
+  // canvasFactory não consta nas tipagens públicas do pdfjs-dist v5 mas é aceito em
+  // runtime — necessário para evitar que o Node.js tente carregar @napi-rs/canvas.
+  ;(docParams as Record<string, unknown>).canvasFactory = {
+    create: (_w: number, _h: number) => ({ canvas: null as unknown as HTMLCanvasElement, context: null as unknown as CanvasRenderingContext2D }),
+    reset: () => {},
+    destroy: () => {},
+  }
+  const loadingTask = pdfjsLib.getDocument(docParams)
 
   const pdf = await loadingTask.promise
   const pages: string[] = []

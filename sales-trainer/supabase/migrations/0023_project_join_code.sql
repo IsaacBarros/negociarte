@@ -1,31 +1,37 @@
--- Migration: 0018_project_join_code.sql
--- Adiciona join_code em scenario_companies para acesso autônomo do vendedor
--- via link /join/[code]
+-- Migration: 0023_project_join_code.sql
+-- Conteúdo idempotente — originalmente criado como 0018_project_join_code.sql (número duplicado).
+-- Esta migration é reaplicada de forma segura; veja 0024_fix_migration_registry.sql.
 
--- 1. Adiciona a coluna (nullable primeiro para popular dados existentes)
+-- 1. Adiciona a coluna (IF NOT EXISTS garante idempotência)
 ALTER TABLE public.scenario_companies
   ADD COLUMN IF NOT EXISTS join_code TEXT;
 
--- 2. Popula registros existentes com códigos únicos
+-- 2. Popula registros existentes com códigos únicos (WHERE garante idempotência)
 UPDATE public.scenario_companies
   SET join_code = replace(gen_random_uuid()::text, '-', '')
   WHERE join_code IS NULL;
 
--- 3. Torna NOT NULL e UNIQUE
+-- 3. Torna NOT NULL (idempotente no PostgreSQL)
 ALTER TABLE public.scenario_companies
   ALTER COLUMN join_code SET NOT NULL;
 
-ALTER TABLE public.scenario_companies
-  ADD CONSTRAINT scenario_companies_join_code_key UNIQUE (join_code);
+-- 4. Constraint UNIQUE (verificação manual para idempotência)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'scenario_companies_join_code_key'
+      AND conrelid = 'public.scenario_companies'::regclass
+  ) THEN
+    ALTER TABLE public.scenario_companies
+      ADD CONSTRAINT scenario_companies_join_code_key UNIQUE (join_code);
+  END IF;
+END $$;
 
--- 4. Índice para busca rápida por join_code
+-- 5. Índice para busca rápida por join_code
 CREATE INDEX IF NOT EXISTS idx_scenario_companies_join_code
   ON public.scenario_companies (join_code);
 
--- 5. Função SECURITY DEFINER para lookup por join_code e auto-vinculação
---    Chamada pelo seller autenticado ao acessar /join/[code].
---    Bypassa o RLS de scenario_companies (que exige mesmo org_id),
---    permitindo que o seller seja vinculado ao projeto correto.
+-- 6. Função SECURITY DEFINER para lookup por join_code e auto-vinculação
 CREATE OR REPLACE FUNCTION public.join_project_by_code(p_code TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
@@ -36,13 +42,11 @@ DECLARE
   v_company    scenario_companies%ROWTYPE;
   v_user_id    UUID;
 BEGIN
-  -- Verifica autenticação
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'not_authenticated';
   END IF;
 
-  -- Busca empresa pelo código
   SELECT *
     INTO v_company
     FROM scenario_companies
@@ -54,12 +58,10 @@ BEGIN
     RETURN json_build_object('error', 'invalid_code');
   END IF;
 
-  -- Vincula seller à empresa (ignora se já vinculado)
   INSERT INTO seller_companies (seller_id, company_id, organization_id)
   VALUES (v_user_id, v_company.id, v_company.organization_id)
   ON CONFLICT (seller_id, company_id) DO NOTHING;
 
-  -- Atualiza organization_id do seller se ainda não tem (novo usuário)
   UPDATE profiles
      SET organization_id = v_company.organization_id,
          updated_at = now()
@@ -74,11 +76,9 @@ BEGIN
 END;
 $$;
 
--- 6. Concede execução ao role authenticated
 GRANT EXECUTE ON FUNCTION public.join_project_by_code(TEXT) TO authenticated;
 
 -- 7. Função auxiliar para buscar nome do projeto por código
---    (usada na join page antes de executar a vinculação)
 CREATE OR REPLACE FUNCTION public.get_project_by_join_code(p_code TEXT)
 RETURNS TABLE(id uuid, name text)
 LANGUAGE sql
