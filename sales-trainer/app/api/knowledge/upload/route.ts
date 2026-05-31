@@ -2,13 +2,10 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { z } from 'zod'
-import { PDFParse } from 'pdf-parse'
+import { extractPdfText } from '@/lib/pdf-extract'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-// Limite de texto injetável por documento (caracteres)
-const MAX_TEXT_CHARS = 150_000
 
 const QuerySchema = z.object({
   company_id: z.string().uuid(),
@@ -75,11 +72,11 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(arrayBuffer)
 
   let extractedText = ''
+  let truncated = false
   try {
-    const parser = new PDFParse({ data: new Uint8Array(buffer) })
-    const result = await parser.getText()
-    extractedText = result.text.trim()
-    await parser.destroy()
+    const result = await extractPdfText(buffer)
+    extractedText = result.text
+    truncated = result.truncated
   } catch {
     return NextResponse.json(
       { error: 'Falha ao extrair texto do PDF. Verifique se o arquivo não está protegido.' },
@@ -92,12 +89,6 @@ export async function POST(request: Request) {
       { error: 'Nenhum texto encontrado no PDF. O arquivo pode conter apenas imagens.' },
       { status: 422 },
     )
-  }
-
-  // Truncar se necessário
-  const truncated = extractedText.length > MAX_TEXT_CHARS
-  if (truncated) {
-    extractedText = extractedText.slice(0, MAX_TEXT_CHARS)
   }
 
   // Upload do arquivo original para o Supabase Storage

@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
 import { z } from 'zod'
-import { PDFParse } from 'pdf-parse'
+import { extractPdfText } from '@/lib/pdf-extract'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-const MAX_TEXT_CHARS = 150_000
 
 const CUSTOMER_FIELDS = [
   'business_profile',
@@ -96,11 +94,11 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(arrayBuffer)
 
   let extractedText = ''
+  let truncated = false
   try {
-    const parser = new PDFParse({ data: new Uint8Array(buffer) })
-    const result = await parser.getText()
-    extractedText = result.text.trim()
-    await parser.destroy()
+    const result = await extractPdfText(buffer)
+    extractedText = result.text
+    truncated = result.truncated
   } catch {
     return NextResponse.json(
       { error: 'Falha ao extrair texto do PDF. Verifique se o arquivo não está protegido.' },
@@ -114,9 +112,6 @@ export async function POST(request: Request) {
       { status: 422 },
     )
   }
-
-  const truncated = extractedText.length > MAX_TEXT_CHARS
-  if (truncated) extractedText = extractedText.slice(0, MAX_TEXT_CHARS)
 
   // Upload para storage
   const filePath = `${user.organization_id}/${entity_type}/${entity_id}/${field}_${Date.now()}_${file.name}`

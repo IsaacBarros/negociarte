@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/actions/auth-helpers'
-import { PDFParse } from 'pdf-parse'
+import { extractPdfText } from '@/lib/pdf-extract'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -42,14 +42,16 @@ export async function POST(request: Request) {
 
   let extractedText = ''
 
+  let truncated = false
   if (isTxt) {
     extractedText = buffer.toString('utf-8').trim()
+    truncated = extractedText.length > MAX_TEXT_CHARS
+    if (truncated) extractedText = extractedText.slice(0, MAX_TEXT_CHARS)
   } else {
     try {
-      const parser = new PDFParse({ data: new Uint8Array(buffer) })
-      const result = await parser.getText()
-      extractedText = result.text.trim()
-      await parser.destroy()
+      const result = await extractPdfText(buffer)
+      extractedText = result.text
+      truncated = result.truncated
     } catch {
       return NextResponse.json(
         { error: 'Falha ao extrair texto do PDF. Verifique se o arquivo não está protegido.' },
@@ -64,9 +66,6 @@ export async function POST(request: Request) {
       { status: 422 },
     )
   }
-
-  const truncated = extractedText.length > MAX_TEXT_CHARS
-  if (truncated) extractedText = extractedText.slice(0, MAX_TEXT_CHARS)
 
   return NextResponse.json({ text: extractedText, chars: extractedText.length, truncated })
 }
