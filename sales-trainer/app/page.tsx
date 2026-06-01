@@ -22,6 +22,6 @@ export default async function RootPage() {
     redirect(`/login?error=missing_profile&reason=${encodeURIComponent(reason)}`)
   }
 
-  if (role === 'admin') redirect('/admin/profiles')
+  if (role === 'admin') redirect('/admin/companies')
   redirect('/train')
 }
