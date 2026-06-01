@@ -27,7 +27,7 @@ export default async function LoginPage({
 
     const role = (profileRaw as { role: string } | null)?.role
 
-    if (role === 'admin') redirect('/admin/profiles')
+    if (role === 'admin') redirect('/admin/companies')
     if (role) redirect('/train')
 
     if (profileError && error !== 'missing_profile') {
