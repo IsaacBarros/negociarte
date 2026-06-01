@@ -1,9 +1,8 @@
 import { z } from 'zod'
-import { SESSION_OBJECTIVES } from '@/lib/schemas/session'
 
 export const CustomerProfileSchema = z.object({
   company_id: z.string().uuid('Selecione uma empresa'),
-  customer_id: z.string().uuid('Selecione um cliente'),
+  customer_id: z.string().uuid().optional(),
   name: z.string().min(2, 'Nome é obrigatório').max(100),
   description: z.string().max(500).optional(),
   buyer_role: z.string().max(200).optional(),
@@ -30,7 +29,7 @@ export const CustomerProfileSchema = z.object({
   behavior_style_id: z.string().uuid().optional(),
   chat_model: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
-  available_objectives: z.array(z.enum(SESSION_OBJECTIVES)).nullable().optional(),
+  available_objectives: z.array(z.string().min(1).max(500)).nullable().optional(),
   system_prompt: z.string().optional(),
 })
 

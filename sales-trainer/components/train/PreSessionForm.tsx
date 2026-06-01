@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { ObjectiveSelector } from './ObjectiveSelector'
 import { createSession } from '@/lib/actions/sessions'
-import { type SessionObjective } from '@/lib/schemas/session'
 
 const DIFFICULTY_OPTIONS = [
   {
@@ -43,7 +42,7 @@ export function PreSessionForm({
   const initialDifficulty: 'easy' | 'medium' | 'hard' =
     defaultDifficulty && defaultDifficulty !== 'trainee_choice' ? defaultDifficulty : 'medium'
 
-  const [objective, setObjective] = useState<SessionObjective | null>(null)
+  const [objective, setObjective] = useState<string | null>(null)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>(initialDifficulty)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)

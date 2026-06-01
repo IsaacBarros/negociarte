@@ -7,17 +7,14 @@ import { ScenarioEntityForm } from '@/components/profiles/ScenarioEntityForm'
 import { KnowledgeDocList } from '@/components/admin/KnowledgeDocList'
 import { ProjectTabs } from '@/components/admin/ProjectTabs'
 import { ScenariosSection } from '@/components/admin/ScenariosSection'
-import { ClientsSection } from '@/components/admin/ClientsSection'
 import { AccessSection } from '@/components/admin/AccessSection'
-import { BehaviorStylesSection } from '@/components/admin/BehaviorStylesSection'
-import { CriteriaManagerSection } from '@/components/admin/CriteriaManagerSection'
 import { DeleteCompanyButton } from '@/components/admin/DeleteCompanyButton'
 import type { ScenarioCompanyInput } from '@/lib/schemas/scenario-entities'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Projeto — Negociarte' }
 
-const VALID_TABS = ['context', 'clients', 'styles', 'criteria', 'scenarios', 'access'] as const
+const VALID_TABS = ['context', 'scenarios', 'access'] as const
 type Tab = (typeof VALID_TABS)[number]
 
 export default async function CompanyPage({
@@ -71,17 +68,6 @@ export default async function CompanyPage({
         .select('*')
         .eq('company_id', id)
         .order('created_at', { ascending: true })
-    : { data: null }
-
-  // ── Tab: clients ─────────────────────────────────────────────────────────
-
-  const { data: clientsData } = tab === 'clients'
-    ? await supabase
-        .from('scenario_customers')
-        .select('id, name, company_name, buyer_role, chat_model, business_profile_text, business_profile_file_path, pain_objections_text, pain_objections_file_path, relationship_history_text, relationship_history_file_path')
-        .eq('company_id', id)
-        .eq('organization_id', user.organization_id)
-        .order('name', { ascending: true })
     : { data: null }
 
   // ── Tab: scenarios ────────────────────────────────────────────────────────
@@ -143,9 +129,9 @@ export default async function CompanyPage({
     (r) => (r as { seller_id: string }).seller_id,
   )
 
-  // ── Tab: styles / scenarios (estilos necessários nos dois) ───────────────
+  // ── Tab: styles (necessário para o seletor de cenários) ─────────────────
 
-  const { data: behaviorStyles } = (tab === 'styles' || tab === 'scenarios')
+  const { data: behaviorStyles } = tab === 'scenarios'
     ? await supabase
         .from('behavior_styles')
         .select('id, name, description, simulation_guidance, evaluation_criteria, is_active')
@@ -163,17 +149,6 @@ export default async function CompanyPage({
         .eq('organization_id', user.organization_id)
         .eq('is_active', true)
         .order('name', { ascending: true })
-    : { data: null }
-
-  // ── Tab: criteria ─────────────────────────────────────────────────────────
-
-  const { data: activeCriteriaRaw } = tab === 'criteria'
-    ? await supabase
-        .from('evaluation_criteria')
-        .select('id, name, stages, total_points, is_active, sales_process_text, sales_process_file_path, competencies_text, competencies_file_path')
-        .eq('company_id', id)
-        .eq('is_active', true)
-        .single()
     : { data: null }
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -218,18 +193,6 @@ export default async function CompanyPage({
   }
 
   const updateAction = updateScenarioCompany.bind(null, company.id)
-
-  type CriteriaRaw = {
-    id: string
-    name: string
-    stages: unknown
-    total_points: number
-    is_active: boolean
-    sales_process_text: string | null
-    sales_process_file_path: string | null
-    competencies_text: string | null
-    competencies_file_path: string | null
-  }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -289,103 +252,14 @@ export default async function CompanyPage({
         </div>
       )}
 
-      {/* ── Tab: Clientes ─────────────────────────────────────────────────── */}
-      {tab === 'clients' && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-neutral-700">Clientes</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Compradores que os vendedores vão simular negociar. Cada cliente pode ter documentos
-              de contexto (perfil, dores, histórico) que a IA usa para gerar cenários.
-            </p>
-          </div>
-          <ClientsSection
-            companyId={id}
-            initialClients={(clientsData ?? []) as {
-              id: string
-              name: string
-              company_name: string | null
-              buyer_role: string | null
-              chat_model: string | null
-              business_profile_text: string | null
-              business_profile_file_path: string | null
-              pain_objections_text: string | null
-              pain_objections_file_path: string | null
-              relationship_history_text: string | null
-              relationship_history_file_path: string | null
-            }[]}
-          />
-        </div>
-      )}
-
       {/* ── Tab: Cenários ─────────────────────────────────────────────────── */}
       {tab === 'scenarios' && (
         <div className="space-y-6">
           <ScenariosSection
             companyId={id}
-            projectProductContext={company.product_context}
             profiles={profilesWithHistories}
             sellers={linkedSellers}
-            clients={(projectClients ?? []) as { id: string; name: string; company_name: string | null; buyer_role: string | null; chat_model: string | null }[]}
-            styles={(behaviorStyles ?? []) as { id: string; name: string }[]}
             scenarioTypes={(scenarioTypesData ?? []) as { key: string; label: string }[]}
-          />
-        </div>
-      )}
-
-      {/* ── Tab: Estilos ──────────────────────────────────────────────────── */}
-      {tab === 'styles' && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-neutral-700">Estilos de comportamento</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Estilos disponíveis para a organização. Um é sorteado aleatoriamente por sessão.
-            </p>
-          </div>
-          <BehaviorStylesSection
-            styles={(behaviorStyles ?? []) as {
-              id: string
-              name: string
-              description: string
-              simulation_guidance: string
-              evaluation_criteria: string | null
-              is_active: boolean
-            }[]}
-          />
-        </div>
-      )}
-
-      {/* ── Tab: Critérios ────────────────────────────────────────────────── */}
-      {tab === 'criteria' && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-neutral-700">Critérios de avaliação</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Define como as simulações desta empresa são avaliadas. Sem critério configurado,
-              o sistema usa os 6 estágios padrão da Negociarte.
-            </p>
-          </div>
-          <CriteriaManagerSection
-            companyId={id}
-            activeCriteria={
-              activeCriteriaRaw
-                ? {
-                    id: (activeCriteriaRaw as CriteriaRaw).id,
-                    name: (activeCriteriaRaw as CriteriaRaw).name,
-                    stages: (activeCriteriaRaw as CriteriaRaw).stages as {
-                      key: string
-                      label: string
-                      behaviors: { key: string; label: string; weight: number }[]
-                    }[],
-                    total_points: (activeCriteriaRaw as CriteriaRaw).total_points,
-                    is_active: (activeCriteriaRaw as CriteriaRaw).is_active,
-                    sales_process_text: (activeCriteriaRaw as CriteriaRaw).sales_process_text,
-                    sales_process_file_path: (activeCriteriaRaw as CriteriaRaw).sales_process_file_path,
-                    competencies_text: (activeCriteriaRaw as CriteriaRaw).competencies_text,
-                    competencies_file_path: (activeCriteriaRaw as CriteriaRaw).competencies_file_path,
-                  }
-                : null
-            }
           />
         </div>
       )}

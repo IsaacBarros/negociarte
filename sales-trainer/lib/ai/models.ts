@@ -2,8 +2,8 @@ type Purpose = 'chat' | 'evaluation' | 'suggestion'
 
 const defaults: Record<Purpose, string> = {
   chat: 'anthropic/claude-sonnet-4.5',
-  evaluation: 'openai/gpt-4o-mini',
-  suggestion: 'openai/gpt-4o-mini',
+  evaluation: 'google/gemini-3.1-flash-lite',
+  suggestion: 'google/gemini-3.1-flash-lite',
 }
 
 export function modelFor(purpose: Purpose): string {

@@ -41,6 +41,7 @@ _Fluxo de autenticação, papéis admin/seller, onboarding._
 _Integrações, pipelines de dados, padrões de Route Handlers._
 
 - [Knowledge base por empresa](arquitetura/knowledge-base.md) — fluxo de upload/análise de docs; por que knowledge NÃO injeta no chat automaticamente sem recompilar o perfil; dependências servidor-only
+- [pdfjs-dist v5 em Node.js](arquitetura/pdfjs-dist-node.md) — breaking change workerSrc v4→v5; polyfills necessários; canvasFactory; por que path.resolve funciona em dev e Docker
 
 ---
 

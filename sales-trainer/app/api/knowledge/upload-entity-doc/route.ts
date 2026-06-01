@@ -13,7 +13,7 @@ const CUSTOMER_FIELDS = [
   'relationship_history',
 ] as const
 
-const CRITERIA_FIELDS = ['sales_process', 'competencies'] as const
+const CRITERIA_FIELDS = ['sales_process', 'style_alignment', 'result_adherence', 'competencies'] as const
 
 type CustomerField = (typeof CUSTOMER_FIELDS)[number]
 type CriteriaField = (typeof CRITERIA_FIELDS)[number]
@@ -141,7 +141,11 @@ export async function POST(request: Request) {
     const updateData =
       criteriaField === 'sales_process'
         ? { sales_process_text: extractedText, sales_process_file_path: savedFilePath }
-        : { competencies_text: extractedText, competencies_file_path: savedFilePath }
+        : criteriaField === 'style_alignment'
+          ? { style_alignment_text: extractedText, style_alignment_file_path: savedFilePath }
+          : criteriaField === 'result_adherence'
+            ? { result_adherence_text: extractedText, result_adherence_file_path: savedFilePath }
+            : { competencies_text: extractedText, competencies_file_path: savedFilePath }
 
     const { error } = await supabase
       .from('evaluation_criteria')

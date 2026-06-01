@@ -464,3 +464,50 @@ export async function deleteClientForProject(customer_id: string, company_id: st
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/companies/${company_id}`)
 }
+
+const UpdateEntityDocTextSchema = z.discriminatedUnion('entity_type', [
+  z.object({
+    entity_type: z.literal('customer'),
+    entity_id: z.string().uuid(),
+    field: z.enum(['business_profile', 'pain_objections', 'relationship_history']),
+    text: z.string(),
+  }),
+  z.object({
+    entity_type: z.literal('criteria'),
+    entity_id: z.string().uuid(),
+    field: z.enum(['sales_process', 'style_alignment', 'result_adherence', 'competencies']),
+    text: z.string(),
+  }),
+])
+
+/** Atualiza o texto de um slot de documento (após edição manual pelo admin). */
+export async function updateEntityDocText(rawInput: unknown) {
+  const user = await requireAdmin()
+  const input = UpdateEntityDocTextSchema.parse(rawInput)
+  const supabase = await createClient()
+
+  if (input.entity_type === 'customer') {
+    const updateData =
+      input.field === 'business_profile' ? { business_profile_text: input.text } :
+      input.field === 'pain_objections'  ? { pain_objections_text: input.text } :
+                                           { relationship_history_text: input.text }
+    const { error } = await supabase
+      .from('scenario_customers')
+      .update(updateData)
+      .eq('id', input.entity_id)
+      .eq('organization_id', user.organization_id)
+    if (error) throw new Error(error.message)
+  } else {
+    const updateData =
+      input.field === 'sales_process'    ? { sales_process_text: input.text } :
+      input.field === 'style_alignment'  ? { style_alignment_text: input.text } :
+      input.field === 'result_adherence' ? { result_adherence_text: input.text } :
+                                           { competencies_text: input.text }
+    const { error } = await supabase
+      .from('evaluation_criteria')
+      .update(updateData)
+      .eq('id', input.entity_id)
+      .eq('organization_id', user.organization_id)
+    if (error) throw new Error(error.message)
+  }
+}

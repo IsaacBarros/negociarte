@@ -151,6 +151,34 @@ export function useProfileForm({ initialData, action, mode, orgId, profileId }: 
     }
   }
 
+  async function suggestFieldFromDoc(fieldName: keyof CustomerProfileInput, file: File) {
+    setSuggestingField(fieldName)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const extractRes = await fetch('/api/knowledge/extract-text', { method: 'POST', body: fd })
+      if (!extractRes.ok) {
+        const body = await extractRes.json() as { error?: string }
+        throw new Error(body.error ?? 'Erro ao extrair texto do arquivo.')
+      }
+      const { text } = (await extractRes.json()) as { text: string }
+
+      const res = await fetch('/api/ai/suggest-field', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fieldName, currentData: form.getValues(), docText: text }),
+      })
+      if (!res.ok) throw new Error('Erro ao processar documento.')
+
+      const { suggestion } = (await res.json()) as { suggestion: string }
+      form.setValue(fieldName, suggestion as never, { shouldDirty: true, shouldValidate: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível processar o arquivo.')
+    } finally {
+      setSuggestingField(null)
+    }
+  }
+
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     void form.handleSubmit((data) => {
@@ -173,6 +201,7 @@ export function useProfileForm({ initialData, action, mode, orgId, profileId }: 
     submitting: isPending,
     error,
     suggestField,
+    suggestFieldFromDoc,
     suggestingField,
     draftStatus,
     clearDraft,

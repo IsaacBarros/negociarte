@@ -9,7 +9,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
-import { SESSION_OBJECTIVE_LABELS, type SessionObjective } from '@/lib/schemas/session'
+import { SESSION_OBJECTIVE_LABELS } from '@/lib/schemas/session'
 import { BriefingStartSection } from '@/components/train/BriefingStartSection'
 import type { Metadata } from 'next'
 
@@ -95,7 +95,7 @@ export default async function BriefingPage({
   const difficulty = session.difficulty_level ?? profile.difficulty_level
   const showDifficulty = difficulty && difficulty !== 'trainee_choice'
   const chosenObjectiveLabel = session.chosen_objective
-    ? (SESSION_OBJECTIVE_LABELS[session.chosen_objective as SessionObjective] ??
+    ? (SESSION_OBJECTIVE_LABELS[session.chosen_objective as keyof typeof SESSION_OBJECTIVE_LABELS] ??
       session.chosen_objective)
     : null
 
@@ -194,7 +194,7 @@ export default async function BriefingPage({
         {/* CTA — objetivo + botão iniciar (para sessões legadas sem objetivo) */}
         <BriefingStartSection
           sessionId={sessionId}
-          initialObjective={session.chosen_objective as SessionObjective | null}
+          initialObjective={session.chosen_objective}
           availableObjectives={profile.available_objectives}
         />
       </div>

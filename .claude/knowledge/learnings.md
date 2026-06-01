@@ -346,6 +346,204 @@ Essas mudanças são **necessárias** — a migration 0018_project_join_code tor
 - Fallback no evaluator quando org sem critérios cadastrados.
 - Radar chart no FeedbackCard (ainda barras).
 
+---
+
+## 2026-05-31 — Auditoria de dependências + fix PDF + migrations limpas
+
+**Categoria:** Ops | Bug | Banco
+
+### O que foi feito
+
+1. **Auditoria completa do package.json** — diagnóstico com nível de severidade de cada problema.
+2. **Limpeza do package.json**:
+   - `pdfjs-dist ^5.4.296` declarado como dep direta (antes só existia como transitivo de `pdf-parse`)
+   - `pdf-parse` removido (era "muleta" para instalar pdfjs-dist; código não o usava mais)
+   - `@types/pdf-parse` removido (tipo de pacote inexistente)
+   - `tw-animate-css` removido (não referenciado em nenhum arquivo)
+   - `shadcn` movido para devDependencies (é CLI, não runtime)
+   - Dev script trocado de `next dev --webpack` para `next dev` (Turbopack nativo, consistente com `turbopack.root` já no `next.config.ts`)
+3. **Fix do 422 em `/api/knowledge/upload`** — root cause: `pdfjs-dist v5` quebrou a API de worker (ver raw `2026-05-31-pdfjs-dist-v5-node.md`).
+4. **Migration duplicada resolvida**: `0018_project_join_code.sql` → `0023_project_join_code.sql` (conteúdo idempotente) + `0024_fix_migration_registry.sql` (deleta entrada antiga de `supabase_migrations.schema_migrations` em prod).
+
+### Decisões-chave
+
+- **`path.resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')`**: usa `process.cwd()` como base, que no Next.js aponta para a raiz do projeto tanto em dev quanto no Docker standalone. Solução simples sem depender de `import.meta.url` (indisponível em CJS compilado pelo Next.js) ou hardcode de path absoluto.
+- **Conteúdo idempotente na migration 0023**: `ADD COLUMN IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, constraint verificada via `pg_constraint` em bloco `DO $$`. Necessário porque a migration roda novamente em prod (a entrada no registry muda de `0018_project_join_code` para `0023_project_join_code`).
+- **`0024` deleta a entrada antiga do registry**: se apenas renomeássemos o arquivo, o Supabase tentaria reaplicar a migration `0023` (não está no registry) e **também** nunca removeria o registro `0018_project_join_code` (o arquivo não existe mais, mas o registro sim).
+
+### Pendente (crítico)
+
+- **`pnpm db:migrate` em produção**: aplica `0023_project_join_code` (idempotente) e `0024_fix_migration_registry` (limpa o registry). Deve ser feito antes do próximo deploy.
+
+### Pendente (acumulado de sessões anteriores)
+
+- Indicador de prompt desatualizado no `StepPromptPreview`
+- Fallback no evaluator quando org sem critérios cadastrados
+- Radar chart no FeedbackCard (ainda barras de progresso)
+- Score "X/200" correto na `SessionsTable` (confirmado corrigido em 2026-05-29, mas verificar se persiste)
+
+### Padrões novos identificados
+
+- **`catch {}` silencioso em routes de upload**: o upload route engolia todo erro de `extractPdfText()` com `catch {}`, tornando diagnóstico impossível pela UI. Padrão a evitar — sempre `console.error(e)` antes de retornar erro genérico.
+- **Root lock file vs workspace**: a raiz do monorepo tem `pnpm-lock.yaml` de 9 linhas (quase vazio) porque `package.json` raiz não declara `workspaces`. O lock real está em `sales-trainer/pnpm-lock.yaml`. Não é bug, mas confunde quem tenta instalar pela raiz.
+
+---
+
+## 2026-05-31 — Auditoria OpenRouter + fixes de bugs + indicador de prompt desatualizado
+
+**Categoria:** IA | Bug | UI
+
+### Feito
+
+1. **Auditoria completa OpenRouter**: 7 rotas mapeadas. Sistema prompt = compilado (estático, salvo no perfil) + 5 injeções runtime por request (KB empresa, histórico seller-cliente, estilo comportamental, dificuldade, objetivo). KB não tem "memória" — histórico completo de mensagens enviado a cada turn, sem sumarização.
+
+2. **Migration 0024 corrigida**: `supabase_migrations.schema_migrations` não existe em ambientes que aplicam migrations pelo Dashboard (sem CLI). Reescrita como `DO $$ IF EXISTS ... END $$` — no-op seguro se schema não existe. Pode rodar no Dashboard.
+
+3. **`scenario-entities.ts` já estava commitado** em `8ec47ef` — pendência dos learnings anteriores era falso alarme.
+
+4. **Bug: prompt avaliador dizia "score 1 a 5"** — schema Zod já aceitava 0 desde maio, texto do prompt ainda pedia mínimo 1. Corrigido para "0 a 5" em `evaluator-template.ts`.
+
+5. **Bug: `evaluate-session/route.ts` hardcodava modelo** — duplicava lógica de `modelFor('evaluation')`. Corrigido.
+
+6. **Bug crítico: sem limite no KB do chat** — `company_knowledge_docs` concatenados sem limite. Empresa com muitos PDFs ultrapassaria context window silenciosamente. Adicionado `MAX_KNOWLEDGE_CHARS = 20_000` em `app/api/chat/route.ts`.
+
+7. **Indicador de prompt desatualizado completo**: botão "Recarregar campos" no aviso amber. Clique: `handleReloadFromSource()` reescreve todos os campos empresa/cliente no form → `reloadPending=true` → effect sincroniza `editedPrompt` com novo `generatedPrompt` → `onPromptChange('')` limpa `system_prompt` → servidor recompila ao salvar.
+
+### Decisões
+
+- **`handleReloadFromSource` sobrescreve SEMPRE** (inclusive com `''` quando campo é null) — objetivo é apagar dados stale, não apenas preencher vazios. Diferente do `StepCompany.useEffect` que só preenche não-vazios.
+- **`reloadPending` + React 18 batching**: `form.setValue` e `setReloadPending(true)` na mesma função são batched. `generatedPrompt` já está atualizado quando o effect do `reloadPending` roda. Sem setTimeout ou ref extra.
+- **`onPromptChange('')`**: garante que o server action entre no branch `compileSystemPrompt(merged)`, não use snapshot antigo.
+
+### Pendente
+
+- `generate-persona/route.ts` usa query manual de role em vez de `requireAdmin()` — inconsistente, baixo risco funcional.
+- Radar chart no FeedbackCard (ainda barras).
+- ~~`pnpm db:migrate` em produção (0023 + 0024)~~ — aplicado. ✓
+
+### Padrão novo
+
+- **`reloadPending` para sincronizar estado derivado**: quando estado A depende de estado B externo (prop), e B precisa atualizar antes de A ser recalculado, usar flag `pending` + effect que aguarda B. Funciona porque React 18 batea as duas atualizações no mesmo render.
+
+---
+
+## 2026-05-31 (2) — Modelos IA, upload múltiplo, redirect pós-save
+
+**Categoria:** IA | UI | Bug
+
+### Feito
+
+1. **Modelos evaluation + suggestion → `google/gemini-3.1-flash-lite`** em `lib/ai/models.ts`. Substituível via env var.
+2. **Upload múltiplo de PDF** no `KnowledgeDocList`: `input[multiple]`, loop sequencial, progresso `N/total`, erros por arquivo acumulados.
+3. **Redirect pós-save de cenário**: `updateProfile` agora faz `redirect(/admin/companies/[company_id]?tab=scenarios)` se perfil tem empresa, senão `/admin/profiles`. Breadcrumb e botão Cancelar da página de edição seguem o mesmo destino via prop `cancelHref`.
+
+### Decisões
+
+- Upload sequencial (não paralelo): evita sobrecarga e mostra progresso claro.
+- `cancelHref` com default `'/admin/profiles'` — página de criação não passa a prop, comportamento inalterado.
+
+### Pendente
+
+- `generate-persona/route.ts` — auth manual em vez de `requireAdmin()`.
+- Radar chart no FeedbackCard.
+- Testar botão "Recarregar campos" no modo edição.
+
+---
+
+## 2026-05-31 — Reestruturação de abas: projetos 6→3, cenário 4→5
+
+**Categoria:** UI | Arquitetura
+
+### Feito
+
+- **Projeto** (`/admin/companies/[id]`): abas Clientes, Estilos, Critérios removidas. Ficou: Contexto | Cenários | Acesso.
+- **Editor de cenário** (`/admin/profiles/[id]`): steps Empresa e Cliente removidos. Novas abas: Clientes | Estilos | Critérios | Briefing | Preview.
+- **`StepBriefing.tsx`** (novo): funde StepCompany + StepScenario. Campos de empresa ficam em `<details>` colapsável (overrides). Campos de cliente (dores, objeções) ficam na seção "Base interna".
+- **`ClientsSection`**: ganhou props `selectedCustomerId` e `onSelectCustomer`. Botão "Usar neste cenário" por card; cliente ativo mostra badge "Selecionado" + borda preta.
+- **`ProfileFormLayout`**: tabs novas; footer Cancelar/Limpar/Salvar só em Briefing e Preview; ao selecionar cliente auto-preenche campos do form; removeu `localCompanies`.
+- **`StepCompany.tsx` e `StepClient.tsx`**: deletados.
+- **`profiles/new/page.tsx`**: removida prop `companies` (não existe mais); `behaviorStyles` select expandido.
+
+### Decisões
+
+- Clientes no editor = gestão completa (ClientsSection), não só seletor — usuário pediu explicitamente.
+- Campos de empresa viram override colapsável no Briefing — não foram deletados pois a simulação pode precisar sobrescrever contexto por cenário.
+- `behaviorStyles` no editor agora busca `simulation_guidance, evaluation_criteria, is_active` — necessário para `BehaviorStylesSection` funcionar.
+- `customers` no editor agora filtrado por `company_id` — evita mostrar clientes de outros projetos.
+- Footer oculto nas abas de gestão (Clientes/Estilos/Critérios) — essas abas usam server actions próprias, não o form principal.
+
+### Pendente (acumulado)
+
+- `generate-persona/route.ts` — auth manual em vez de `requireAdmin()`.
+- Radar chart no FeedbackCard.
+- `ClientsSection` no editor usa `initialClients` gerado a partir de `localCustomers` (sem doc slots). Se usuário fizer upload de PDF num cliente via esse editor, o slot aparece mas o estado local não reflete — baixo impacto pois docs já estão no banco.
+
+### Padrão novo
+
+- **Abas mistas (form + gestão) no mesmo layout**: tabs de form usam `react-hook-form`; tabs de gestão usam server actions diretas. Discriminado pela constante `FORM_TABS`. Footer e submit só aparecem quando `FORM_TABS.includes(activeTab)`.
+
+---
+
+## 2026-05-31 — Revisão da jornada de criação de cenário
+
+**Categoria:** UI | IA | Banco
+
+### Feito
+
+1. **Migration 0025**: `evaluation_criteria` ganhou 4 novas colunas — `style_alignment_text/file_path`, `result_adherence_text/file_path`, e `custom_criteria jsonb DEFAULT '[]'`. As 4 dimensões fixas de critério agora têm slots de documento.
+
+2. **Análise IA de documentos de cliente** — Nova rota `/api/ai/analyze-client-doc`. Quando um PDF é enviado para um slot de cliente (business_profile, pain_objections, relationship_history), o `ClientDocSlot` dispara automaticamente a análise IA pós-upload. O texto bruto do PDF é substituído por um resumo estruturado em markdown gerado pelo modelo `suggestion`. UI mostra "Processando com IA..." com ícone `Sparkles`.
+
+3. **Seleção de estilo na aba Estilos** — `BehaviorStylesSection` ganhou `selectedStyleId` e `onSelectStyle` props, idêntico ao padrão do `ClientsSection` ("Usar neste cenário" + badge "Selecionado" + borda preta). O dropdown redundante de `behavior_style_id` foi removido do `StepBriefing`.
+
+4. **CriteriaManagerSection redesenhado** — 4 slots fixos de documento + seção modular de "Critérios adicionais" (JSONB). Admin pode criar/deletar critérios customizados via `updateCustomCriteria` server action. Cada slot usa `analyzeWithAI={false}` (critérios não passam pelo pipeline de análise de cliente).
+
+5. **Editor inline de etapas/comportamentos** — `StagesEditor` sub-componente dentro de `CriteriaManagerSection`. Botão "Editar etapas" ativa modo edição: inputs diretamente na tabela para label de etapa/comportamento e peso; botões + (add) e lixeira (delete) por etapa e por comportamento. Total de pontos recalculado em tempo real por `calcTotal(stages)`. Chaves geradas por `randKey(prefix)` — 6 chars alpha aleatórios para garantir conformidade com regex `/^[a-z_]+$/` do `BehaviorSchema`.
+
+6. **`upload-entity-doc`** atualizado para aceitar `style_alignment` e `result_adherence` como fields válidos de `criteria`.
+
+7. **"Novo cenário" → navegação direta** — Removido `CreateScenarioDialog` do `ScenariosSection`. Botão "Novo cenário" e link de empty state viram `<Link>` para `/admin/profiles/new?company_id={companyId}`. Página `new/page.tsx` lê `company_id` dos searchParams, filtra clientes por empresa e carrega `activeCriteria` do projeto automaticamente. Breadcrumb e `cancelHref` apontam para `?tab=scenarios` da empresa.
+
+### Decisões
+
+- **Análise automática vs. botão manual**: escolhemos automática (dispara no upload) para minimizar fricção. O usuário não precisa saber que há um passo extra.
+- **`analyzeWithAI={false}` nos slots de critério**: a análise de cliente (personas B2B) requer prompts específicos por campo. Para critérios, o texto bruto é suficiente pois é o avaliador que interpreta. Evita criar 4 novos prompts por ora.
+- **`custom_criteria` como JSONB em vez de tabela separada**: evita migration de FK e RLS extra. Array de `{id, name, text}` é simples o suficiente para o uso atual (critérios customizados são raros e o admin é a única persona que os gerencia).
+- **Chave computada `{ [column]: text }` quebra TypeScript do Supabase**: o tipo gerado pelo Supabase não aceita string index signatures. Usar ternário explícito (`field === 'x' ? { x_text: val } : ...`) é o padrão estabelecido no projeto.
+
+### Pendente
+
+- `generate-persona/route.ts` — auth manual em vez de `requireAdmin()`.
+- Radar chart no FeedbackCard (ainda barras).
+- Aplicar migration 0025 no banco de produção (Supabase Dashboard).
+
+---
+
+## 2026-05-31 — Bugs UX: critérios, objetivos customizados, criação de cliente, redirect pós-save
+
+**Categoria:** Bug | UI
+
+### Feito
+
+1. **Critérios não salvava (UI stale)** — `CriteriaManagerSection` exibia `activeCriteria.stages` (prop do servidor) após `saveStages()`. Parecia não salvar. Fix: `router.refresh()` após save. Mesmo problema em `saveParsedCriteria()`: novo critério não aparecia depois da IA gerar. Fix igual.
+
+2. **Objetivos customizados** — `StepBriefing` ganhou input+botão para adicionar strings livres a `available_objectives`. Tags removíveis. Schemas atualizados em cadeia: `CustomerProfileSchema.available_objectives` passou de `z.array(z.enum(SESSION_OBJECTIVES))` para `z.array(z.string())`; `CreateSessionSchema` e `UpdateObjectiveSchema.chosen_objective` passaram de `z.enum(SESSION_OBJECTIVES)` para `z.string().min(1).max(500)`. `ObjectiveSelector` e `BriefingStartSection` e `PreSessionForm` trocaram tipo `SessionObjective` por `string`.
+
+3. **CreateClientDialog** — removida máquina de estados 2 fases (idle→docs). Agora view única scrollável: formulário no topo, seção "Base interna" abaixo com placeholder até o cliente ser criado, depois docs ativos. Mesmo UX, sem troca de fase.
+
+4. **Redirect pós-save cenário** — `CustomerProfileSchema.customer_id` era UUID obrigatório. Perfis criados via `CreateScenarioDialog` (sem customer) ficavam com `customer_id: ''` → Zod falhava → action nunca rodava → sem redirect. Fix: `customer_id` virou `.optional()`. Removido `if (!customer) throw` em `createProfile` e `updateProfile` (código já usava `customer?.field`). `createProfile` agora redireciona para `/admin/companies/[id]?tab=scenarios` igual ao `updateProfile`.
+
+### Padrões novos
+
+- **`router.refresh()` vs `revalidatePath`**: `revalidatePath('/admin/companies')` não revalida `/admin/companies/[id]`. Para componentes client que exibem props do servidor após mutation, `router.refresh()` é o fix correto.
+- **Schemas em cascata**: mudar o tipo de um campo (ex: `SessionObjective → string`) requer rastrear todos os consumers: schema Zod, action, componentes client com `useState<T>`, props de componentes filho.
+
+### Pendente (acumulado)
+
+- `generate-persona/route.ts` — auth manual em vez de `requireAdmin()`.
+- Radar chart no FeedbackCard.
+- ~~Aplicar migration 0025 no Supabase Dashboard.~~ ✓
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

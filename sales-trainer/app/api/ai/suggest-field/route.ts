@@ -5,9 +5,12 @@ import { modelFor } from '@/lib/ai/models'
 import { generateText } from 'ai'
 import { z } from 'zod'
 
+const MAX_DOC_TEXT_CHARS = 50_000
+
 const RequestSchema = z.object({
   fieldName: z.string().min(1),
   currentData: z.record(z.string(), z.unknown()),
+  docText: z.string().max(MAX_DOC_TEXT_CHARS).optional(),
 })
 
 const fieldLabels: Record<string, string> = {
@@ -60,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
   }
 
-  const { fieldName, currentData } = result.data
+  const { fieldName, currentData, docText } = result.data
   const label = fieldLabels[fieldName] ?? fieldName
 
   const contextStr = Object.entries(currentData)
@@ -68,10 +71,14 @@ export async function POST(request: Request) {
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n')
 
+  const prompt = docText
+    ? `Analise o documento abaixo e extraia as informações relevantes para preencher o campo "${label}" de um perfil de cliente B2B para simulação de vendas comerciais.${contextStr ? `\n\nContexto já preenchido no perfil:\n${contextStr}` : ''}\n\nDOCUMENTO:\n${docText}\n\nResponda com 2 a 6 frases em português. Apenas o texto do campo, sem prefixos ou explicações.`
+    : `Dado o perfil de cliente abaixo, sugira um texto conciso (2-4 frases em português) para descrever os "${label}".\n\nContexto:\n${contextStr || '(nenhum contexto fornecido ainda)'}\n\nResponda apenas com o texto sugerido, sem prefixos ou explicações.`
+
   const { text } = await generateText({
     model: openrouter(modelFor('suggestion')),
-    prompt: `Dado o perfil de cliente abaixo, sugira um texto conciso (2-4 frases em português) para descrever os "${label}".\n\nContexto:\n${contextStr || '(nenhum contexto fornecido ainda)'}\n\nResponda apenas com o texto sugerido, sem prefixos ou explicações.`,
-    maxOutputTokens: 300,
+    prompt,
+    maxOutputTokens: 400,
   })
 
   return NextResponse.json({ suggestion: text })

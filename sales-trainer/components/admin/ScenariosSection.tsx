@@ -4,7 +4,6 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronUp, Save, Plus, BookOpen } from 'lucide-react'
 import { setSellerCustomerHistory } from '@/lib/actions/seller-companies'
-import { CreateScenarioDialog } from '@/components/admin/CreateScenarioDialog'
 
 interface Seller {
   id: string
@@ -27,19 +26,6 @@ interface Profile {
   histories: History[]
 }
 
-interface ClientOption {
-  id: string
-  name: string
-  company_name: string | null
-  buyer_role: string | null
-  chat_model: string | null
-}
-
-interface StyleOption {
-  id: string
-  name: string
-}
-
 interface ScenarioTypeOption {
   key: string
   label: string
@@ -47,11 +33,8 @@ interface ScenarioTypeOption {
 
 interface Props {
   companyId: string
-  projectProductContext?: string | null
   profiles: Profile[]
   sellers: Seller[]
-  clients: ClientOption[]
-  styles: StyleOption[]
   scenarioTypes: ScenarioTypeOption[]
 }
 
@@ -200,11 +183,11 @@ function ScenarioCard({ profile, sellers, scenarioTypes }: { profile: Profile; s
   )
 }
 
-export function ScenariosSection({ companyId, projectProductContext, profiles, sellers, clients, styles, scenarioTypes }: Props) {
-  const [dialogOpen, setDialogOpen] = useState(false)
+export function ScenariosSection({ companyId, profiles, sellers, scenarioTypes }: Props) {
+  const newHref = `/admin/profiles/new?company_id=${companyId}`
 
   return (
-    <>
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-neutral-700">Cenários de venda</h2>
@@ -212,27 +195,22 @@ export function ScenariosSection({ companyId, projectProductContext, profiles, s
             Cada cenário representa uma oportunidade de venda B2B que os vendedores podem praticar.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setDialogOpen(true)}
+        <Link
+          href={newHref}
           className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700"
         >
           <Plus className="size-4" />
           Novo cenário
-        </button>
+        </Link>
       </div>
 
       {profiles.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-neutral-200 py-12 text-center">
           <BookOpen className="size-8 text-neutral-300" />
           <p className="text-sm text-neutral-500">Nenhum cenário criado ainda.</p>
-          <button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            className="text-sm font-medium text-violet-600 hover:underline"
-          >
+          <Link href={newHref} className="text-sm font-medium text-violet-600 hover:underline">
             Criar primeiro cenário
-          </button>
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
@@ -241,16 +219,6 @@ export function ScenariosSection({ companyId, projectProductContext, profiles, s
           ))}
         </div>
       )}
-
-      <CreateScenarioDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        companyId={companyId}
-        projectProductContext={projectProductContext}
-        clients={clients}
-        styles={styles}
-        scenarioTypes={scenarioTypes}
-      />
-    </>
+    </div>
   )
 }

@@ -88,6 +88,8 @@ export async function POST(request: Request) {
   }
 
   // Base de conhecimento da empresa — injetada em runtime (sempre atualizada)
+  // Limite de 20k chars para não ultrapassar o context window do modelo
+  const MAX_KNOWLEDGE_CHARS = 20_000
   let knowledgePrompt = ''
   if (profile.company_id) {
     const { data: knowledgeDocs } = await supabase
@@ -98,10 +100,13 @@ export async function POST(request: Request) {
       .order('created_at', { ascending: true })
 
     if (knowledgeDocs?.length) {
-      const knowledgeBody = knowledgeDocs
-        .filter((d) => d.extracted_text)
-        .map((d) => `--- ${d.title} ---\n${d.extracted_text ?? ''}`)
-        .join('\n\n')
+      let knowledgeBody = ''
+      for (const doc of knowledgeDocs) {
+        if (!doc.extracted_text) continue
+        const chunk = `--- ${doc.title} ---\n${doc.extracted_text}\n\n`
+        if (knowledgeBody.length + chunk.length > MAX_KNOWLEDGE_CHARS) break
+        knowledgeBody += chunk
+      }
       if (knowledgeBody) {
         knowledgePrompt = `\n\n== BASE DE CONHECIMENTO DA EMPRESA ==\nUse as informações abaixo para enriquecer suas respostas quando relevante. Não cite explicitamente este bloco para o participante.\n\n${knowledgeBody}`
       }

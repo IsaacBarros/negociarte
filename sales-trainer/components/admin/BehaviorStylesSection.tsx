@@ -22,9 +22,17 @@ interface ParsedStyle {
 
 interface Props {
   styles: Style[]
+  selectedStyleId?: string
+  onSelectStyle?: (id: string) => void
 }
 
-function StyleCard({ style }: { style: Style }) {
+interface StyleCardProps {
+  style: Style
+  isSelected: boolean
+  onSelectStyle?: (id: string) => void
+}
+
+function StyleCard({ style, isSelected, onSelectStyle }: StyleCardProps) {
   const [isPending, startTransition] = useTransition()
 
   function handleToggle() {
@@ -43,7 +51,11 @@ function StyleCard({ style }: { style: Style }) {
   return (
     <div
       className={`rounded-lg border p-4 ${
-        style.is_active ? 'border-neutral-200' : 'border-neutral-100 bg-neutral-50 opacity-60'
+        isSelected
+          ? 'border-neutral-900 ring-1 ring-neutral-900'
+          : style.is_active
+            ? 'border-neutral-200'
+            : 'border-neutral-100 bg-neutral-50 opacity-60'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -53,7 +65,22 @@ function StyleCard({ style }: { style: Style }) {
             {style.description}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2">
+          {onSelectStyle && (
+            isSelected ? (
+              <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                Selecionado
+              </span>
+            ) : (
+              <button
+                onClick={() => onSelectStyle(style.id)}
+                disabled={isPending}
+                className="rounded-md border border-neutral-200 px-2 py-0.5 text-xs text-neutral-600 hover:border-neutral-900 hover:text-neutral-900 disabled:opacity-50"
+              >
+                Usar neste cenário
+              </button>
+            )
+          )}
           <button
             onClick={handleToggle}
             disabled={isPending}
@@ -76,7 +103,7 @@ function StyleCard({ style }: { style: Style }) {
   )
 }
 
-export function BehaviorStylesSection({ styles }: Props) {
+export function BehaviorStylesSection({ styles, selectedStyleId, onSelectStyle }: Props) {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showAiParser, setShowAiParser] = useState(false)
   const [aiText, setAiText] = useState('')
@@ -268,7 +295,12 @@ export function BehaviorStylesSection({ styles }: Props) {
         <p className="text-sm text-neutral-400">Nenhum estilo de comportamento criado ainda.</p>
       )}
       {styles.map((style) => (
-        <StyleCard key={style.id} style={style} />
+        <StyleCard
+          key={style.id}
+          style={style}
+          isSelected={selectedStyleId === style.id}
+          onSelectStyle={onSelectStyle}
+        />
       ))}
     </div>
   )

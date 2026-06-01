@@ -4,16 +4,15 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ObjectiveSelector } from './ObjectiveSelector'
 import { updateSessionObjective } from '@/lib/actions/sessions'
-import type { SessionObjective } from '@/lib/schemas/session'
 
 interface Props {
   sessionId: string
-  initialObjective: SessionObjective | null
+  initialObjective: string | null
   availableObjectives: string[] | null
 }
 
 export function BriefingStartSection({ sessionId, initialObjective, availableObjectives }: Props) {
-  const [objective, setObjective] = useState<SessionObjective | null>(initialObjective)
+  const [objective, setObjective] = useState<string | null>(initialObjective)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 

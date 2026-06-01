@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { CheckCircle2, X } from 'lucide-react'
 import { createClientForProject } from '@/lib/actions/scenario-entities'
 import { ClientDocSlot, type DocSlotValue } from './ClientDocSlot'
 import { SELECTABLE_CHAT_MODELS } from '@/lib/ai/models'
@@ -14,14 +13,20 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
+interface CreatedClient {
+  id: string
+  name: string
+  company_name: string | null
+  buyer_role: string | null
+  docs: DocState
+}
+
 interface Props {
   companyId: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated?: (client: { id: string; name: string }) => void
+  onCreated?: (client: CreatedClient) => void
 }
-
-type State = 'idle' | 'saving' | 'docs' | 'done' | 'error'
 
 interface DocState {
   business_profile: DocSlotValue | null
@@ -30,8 +35,6 @@ interface DocState {
 }
 
 export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }: Props) {
-  const router = useRouter()
-  const [state, setState] = useState<State>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [isPending, startTransition] = useTransition()
 
@@ -49,7 +52,6 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
   const canSave = name.trim().length > 0 && companyName.trim().length > 0
 
   function reset() {
-    setState('idle')
     setName('')
     setCompanyName('')
     setBuyerRole('')
@@ -60,8 +62,14 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
   }
 
   function handleClose() {
-    if (state === 'docs' || state === 'done') {
-      router.refresh()
+    if (createdClientId) {
+      onCreated?.({
+        id: createdClientId,
+        name,
+        company_name: companyName || null,
+        buyer_role: buyerRole || null,
+        docs,
+      })
     }
     reset()
     onOpenChange(false)
@@ -69,7 +77,7 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
 
   function handleCreate() {
     startTransition(async () => {
-      setState('saving')
+      setErrorMsg('')
       try {
         const result = await createClientForProject({
           company_id: companyId,
@@ -79,11 +87,8 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
           chat_model: chatModel,
         })
         setCreatedClientId(result.id)
-        onCreated?.(result)
-        setState('docs')
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : 'Erro inesperado')
-        setState('error')
       }
     })
   }
@@ -94,12 +99,10 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent showCloseButton={false} className="max-w-lg">
+      <DialogContent showCloseButton={false} className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>
-              {state === 'docs' || state === 'done' ? 'Adicionar documentos' : 'Novo cliente'}
-            </DialogTitle>
+            <DialogTitle>Novo cliente</DialogTitle>
             <button
               onClick={handleClose}
               className="text-neutral-400 hover:text-neutral-700"
@@ -110,8 +113,9 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
           </div>
         </DialogHeader>
 
-        {(state === 'idle' || state === 'saving' || state === 'error') && (
-          <div className="space-y-4 pt-2">
+        <div className="space-y-5 pt-2">
+          {/* Dados do cliente */}
+          {!createdClientId ? (
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="mb-1 block text-xs font-medium text-neutral-700">
@@ -157,24 +161,76 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
                     </option>
                   ))}
                 </select>
-                <p className="mt-0.5 text-xs text-neutral-400">
-                  Modelo usado em todas as simulações deste cliente.
-                </p>
               </div>
             </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2.5">
+              <CheckCircle2 className="size-4 shrink-0 text-green-600" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-green-800">{name}</p>
+                <p className="text-xs text-green-600">{companyName}{buyerRole ? ` · ${buyerRole}` : ''}</p>
+              </div>
+            </div>
+          )}
 
-            <p className="text-xs text-neutral-400">
-              Após criar, você poderá carregar PDFs de contexto do cliente.
-            </p>
+          {errorMsg && <p className="text-xs text-red-600">{errorMsg}</p>}
 
-            {state === 'error' && (
-              <p className="text-xs text-red-600">{errorMsg}</p>
+          {/* Base interna — docs de contexto */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                Base interna
+              </p>
+              {!createdClientId && (
+                <p className="text-xs text-neutral-400">Disponível após criar o cliente</p>
+              )}
+            </div>
+
+            {createdClientId ? (
+              <>
+                <ClientDocSlot
+                  label="Perfil do negócio"
+                  description="Apresentação da empresa, produtos, mercado-alvo"
+                  entityType="customer"
+                  entityId={createdClientId}
+                  field="business_profile"
+                  value={docs.business_profile}
+                  onUpdate={(v) => updateDoc('business_profile', v)}
+                />
+                <ClientDocSlot
+                  label="Dores e objeções"
+                  description="Problemas recorrentes, resistências, objeções típicas"
+                  entityType="customer"
+                  entityId={createdClientId}
+                  field="pain_objections"
+                  value={docs.pain_objections}
+                  onUpdate={(v) => updateDoc('pain_objections', v)}
+                />
+                <ClientDocSlot
+                  label="Histórico de relacionamento"
+                  description="Interações anteriores, acordos, contexto de relacionamento"
+                  entityType="customer"
+                  entityId={createdClientId}
+                  field="relationship_history"
+                  value={docs.relationship_history}
+                  onUpdate={(v) => updateDoc('relationship_history', v)}
+                />
+              </>
+            ) : (
+              <div className="rounded-md border border-dashed border-neutral-200 px-4 py-6 text-center">
+                <p className="text-xs text-neutral-400">
+                  Perfil do negócio · Dores e objeções · Histórico de relacionamento
+                </p>
+              </div>
             )}
+          </div>
 
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={handleClose}>
-                Cancelar
-              </Button>
+          {/* Footer */}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={handleClose}>
+              {createdClientId ? 'Concluir' : 'Cancelar'}
+            </Button>
+            {!createdClientId && (
               <Button
                 size="sm"
                 disabled={!canSave || isPending}
@@ -182,51 +238,9 @@ export function CreateClientDialog({ companyId, open, onOpenChange, onCreated }:
               >
                 {isPending ? 'Criando…' : 'Criar cliente'}
               </Button>
-            </div>
+            )}
           </div>
-        )}
-
-        {state === 'docs' && createdClientId && (
-          <div className="space-y-3 pt-2">
-            <p className="text-xs text-neutral-500">
-              Cliente criado. Faça upload dos documentos de contexto (opcional — pode ser feito depois).
-            </p>
-
-            <ClientDocSlot
-              label="Perfil do negócio"
-              description="Apresentação da empresa, produtos, mercado-alvo"
-              entityType="customer"
-              entityId={createdClientId}
-              field="business_profile"
-              value={docs.business_profile}
-              onUpdate={(v) => updateDoc('business_profile', v)}
-            />
-            <ClientDocSlot
-              label="Dores e objeções"
-              description="Problemas recorrentes, resistências, objeções típicas"
-              entityType="customer"
-              entityId={createdClientId}
-              field="pain_objections"
-              value={docs.pain_objections}
-              onUpdate={(v) => updateDoc('pain_objections', v)}
-            />
-            <ClientDocSlot
-              label="Histórico de relacionamento"
-              description="Interações anteriores, acordos, contexto de relacionamento"
-              entityType="customer"
-              entityId={createdClientId}
-              field="relationship_history"
-              value={docs.relationship_history}
-              onUpdate={(v) => updateDoc('relationship_history', v)}
-            />
-
-            <div className="flex justify-end pt-1">
-              <Button size="sm" onClick={handleClose}>
-                Concluir
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   )

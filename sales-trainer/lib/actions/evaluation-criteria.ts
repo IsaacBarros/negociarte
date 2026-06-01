@@ -97,6 +97,35 @@ export async function updateEvaluationCriteria(rawInput: unknown) {
   revalidatePath('/admin/companies')
 }
 
+const CustomCriterionSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(200),
+  text: z.string().max(10_000),
+})
+
+const UpdateCustomCriteriaSchema = z.object({
+  criteria_id: z.string().uuid(),
+  custom_criteria: z.array(CustomCriterionSchema),
+})
+
+/** Salva o array de critérios customizados (JSONB) de um critério existente */
+export async function updateCustomCriteria(rawInput: unknown) {
+  const user = await requireAdmin()
+  const data = UpdateCustomCriteriaSchema.parse(rawInput)
+
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('evaluation_criteria')
+    .update({ custom_criteria: data.custom_criteria })
+    .eq('id', data.criteria_id)
+    .eq('organization_id', user.organization_id)
+
+  if (error) throw new Error('Erro ao salvar critérios customizados.')
+
+  revalidatePath('/admin/companies')
+}
+
 /** Ativa um critério (desativa os demais da mesma empresa) */
 export async function activateEvaluationCriteria(criteriaId: string) {
   const user = await requireAdmin()

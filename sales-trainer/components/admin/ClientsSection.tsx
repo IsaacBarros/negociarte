@@ -25,30 +25,42 @@ interface ClientRow {
 interface Props {
   companyId: string
   initialClients: ClientRow[]
+  selectedCustomerId?: string
+  onSelectCustomer?: (id: string) => void
 }
 
-export function ClientsSection({ companyId, initialClients }: Props) {
+export function ClientsSection({ companyId, initialClients, selectedCustomerId, onSelectCustomer }: Props) {
   const [clients, setClients] = useState(initialClients)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  function handleCreated(client: { id: string; name: string }) {
+  function handleCreated(client: {
+    id: string
+    name: string
+    company_name: string | null
+    buyer_role: string | null
+    docs: {
+      business_profile: DocSlotValue | null
+      pain_objections: DocSlotValue | null
+      relationship_history: DocSlotValue | null
+    }
+  }) {
     setClients((prev) => [
       ...prev,
       {
         id: client.id,
         name: client.name,
-        company_name: null,
-        buyer_role: null,
+        company_name: client.company_name,
+        buyer_role: client.buyer_role,
         chat_model: null,
-        business_profile_text: null,
-        business_profile_file_path: null,
-        pain_objections_text: null,
-        pain_objections_file_path: null,
-        relationship_history_text: null,
-        relationship_history_file_path: null,
+        business_profile_text: client.docs.business_profile?.extracted_text ?? null,
+        business_profile_file_path: client.docs.business_profile?.file_path ?? null,
+        pain_objections_text: client.docs.pain_objections?.extracted_text ?? null,
+        pain_objections_file_path: client.docs.pain_objections?.file_path ?? null,
+        relationship_history_text: client.docs.relationship_history?.extracted_text ?? null,
+        relationship_history_file_path: client.docs.relationship_history?.file_path ?? null,
       },
     ])
     setExpandedId(client.id)
@@ -114,11 +126,12 @@ export function ClientsSection({ companyId, initialClients }: Props) {
         {clients.map((client) => {
           const isExpanded = expandedId === client.id
           const isPendingDelete = pendingDeleteId === client.id
+          const isSelected = selectedCustomerId === client.id
 
           return (
             <div
               key={client.id}
-              className="rounded-lg border border-neutral-200 overflow-hidden"
+              className={`rounded-lg border overflow-hidden ${isSelected ? 'border-neutral-900 ring-1 ring-neutral-900' : 'border-neutral-200'}`}
             >
               {/* Header do card */}
               <div
@@ -144,6 +157,20 @@ export function ClientsSection({ companyId, initialClients }: Props) {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
+                  {onSelectCustomer && (
+                    isSelected ? (
+                      <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                        Selecionado
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onSelectCustomer(client.id) }}
+                        className="rounded-md border border-neutral-200 px-2 py-0.5 text-xs text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
+                      >
+                        Usar neste cenário
+                      </button>
+                    )
+                  )}
                   {isPendingDelete ? (
                     <>
                       <span className="text-xs text-neutral-500">Remover?</span>

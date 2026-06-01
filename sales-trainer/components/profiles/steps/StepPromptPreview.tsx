@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { Check, Copy, AlertTriangle, RotateCcw } from 'lucide-react'
+import { Check, Copy, AlertTriangle, RotateCcw, RefreshCw } from 'lucide-react'
 import { buildPersonaPrompt } from '@/lib/ai/prompts/persona-template'
 import type { CustomerProfileInput } from '@/lib/schemas/profile'
 import type { Database } from '@/types/database'
@@ -14,11 +14,13 @@ interface Props {
   companyUpdatedAt?: string | null
   customerUpdatedAt?: string | null
   onPromptChange?: (prompt: string) => void
+  onReloadFromSource?: () => void
 }
 
-export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt, onPromptChange }: Props) {
+export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt, onPromptChange, onReloadFromSource }: Props) {
   const [copied, setCopied] = useState(false)
   const [editedPrompt, setEditedPrompt] = useState('')
+  const [reloadPending, setReloadPending] = useState(false)
   const isFirstRender = useRef(true)
 
   const isStale = useMemo(() => {
@@ -79,6 +81,20 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
     }
   }, [generatedPrompt])
 
+  // Após reload de campos, sincroniza editedPrompt com o generatedPrompt atualizado
+  useEffect(() => {
+    if (!reloadPending) return
+    setEditedPrompt(generatedPrompt)
+    onPromptChange?.('')
+    setReloadPending(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedPrompt, reloadPending])
+
+  function handleReload() {
+    onReloadFromSource?.()
+    setReloadPending(true)
+  }
+
   const isEdited = editedPrompt !== generatedPrompt
 
   async function copyPrompt() {
@@ -95,9 +111,19 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
           <div className="flex-1 text-sm text-amber-800">
             <p className="font-medium">Empresa ou cliente atualizados após a última compilação</p>
             <p className="mt-0.5 text-xs text-amber-700">
-              Este preview já reflete os valores atuais do formulário. Salve o cenário para recompilar o prompt com os dados mais recentes.
+              Os campos abaixo refletem o snapshot salvo. Recarregue para sobrescrever com os dados atuais da empresa e do cliente.
             </p>
           </div>
+          {onReloadFromSource && (
+            <button
+              type="button"
+              onClick={handleReload}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+            >
+              <RefreshCw className="size-3.5" />
+              Recarregar campos
+            </button>
+          )}
         </div>
       )}
       <div className="rounded-lg border border-neutral-200 bg-white">

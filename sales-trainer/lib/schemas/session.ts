@@ -21,7 +21,7 @@ export const SESSION_OBJECTIVE_LABELS: Record<SessionObjective, string> = {
 export const CreateSessionSchema = z.object({
   customer_profile_id: z.string().uuid(),
   difficulty_level: z.enum(['easy', 'medium', 'hard']).optional(),
-  chosen_objective: z.enum(SESSION_OBJECTIVES).optional(),
+  chosen_objective: z.string().min(1).max(500).optional(),
 })
 
 export const UpdateSessionStatusSchema = z.object({
@@ -30,7 +30,7 @@ export const UpdateSessionStatusSchema = z.object({
 })
 
 export const UpdateObjectiveSchema = z.object({
-  chosen_objective: z.enum(SESSION_OBJECTIVES),
+  chosen_objective: z.string().min(1).max(500),
 })
 
 export const DeleteSessionsSchema = z.object({

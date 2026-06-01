@@ -567,8 +567,13 @@ export type Database = {
           total_points: number
           sales_process_text: string | null
           sales_process_file_path: string | null
+          style_alignment_text: string | null
+          style_alignment_file_path: string | null
+          result_adherence_text: string | null
+          result_adherence_file_path: string | null
           competencies_text: string | null
           competencies_file_path: string | null
+          custom_criteria: Json
           is_active: boolean
           created_at: string
           updated_at: string
@@ -582,8 +587,13 @@ export type Database = {
           total_points?: number
           sales_process_text?: string | null
           sales_process_file_path?: string | null
+          style_alignment_text?: string | null
+          style_alignment_file_path?: string | null
+          result_adherence_text?: string | null
+          result_adherence_file_path?: string | null
           competencies_text?: string | null
           competencies_file_path?: string | null
+          custom_criteria?: Json
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -597,8 +607,13 @@ export type Database = {
           total_points?: number
           sales_process_text?: string | null
           sales_process_file_path?: string | null
+          style_alignment_text?: string | null
+          style_alignment_file_path?: string | null
+          result_adherence_text?: string | null
+          result_adherence_file_path?: string | null
           competencies_text?: string | null
           competencies_file_path?: string | null
+          custom_criteria?: Json
           is_active?: boolean
           created_at?: string
           updated_at?: string

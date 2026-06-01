@@ -69,7 +69,6 @@ export async function createProfile(rawInput: unknown) {
     input.customer_id,
   )
   if (!company) throw new Error('Empresa não encontrada.')
-  if (!customer) throw new Error('Cliente não encontrado.')
 
   const dbData: Database['public']['Tables']['customer_profiles']['Insert'] = {
     organization_id: user.organization_id,
@@ -125,7 +124,9 @@ export async function createProfile(rawInput: unknown) {
   }
 
   revalidatePath('/admin/profiles')
-  redirect(`/admin/profiles/${(data as { id: string }).id}`)
+  const newCompanyId = toNullable(input.company_id)
+  if (newCompanyId) revalidatePath(`/admin/companies/${newCompanyId}`)
+  redirect(newCompanyId ? `/admin/companies/${newCompanyId}?tab=scenarios` : `/admin/profiles/${(data as { id: string }).id}`)
 }
 
 export async function updateProfile(id: string, rawInput: unknown) {
@@ -140,7 +141,6 @@ export async function updateProfile(id: string, rawInput: unknown) {
     input.customer_id,
   )
   if (!company) throw new Error('Empresa não encontrada.')
-  if (!customer) throw new Error('Cliente não encontrado.')
 
   const { data: existing, error: fetchError } = await supabase
     .from('customer_profiles')
@@ -202,6 +202,10 @@ export async function updateProfile(id: string, rawInput: unknown) {
 
   revalidatePath('/admin/profiles')
   revalidatePath(`/admin/profiles/${id}`)
+
+  const companyId = toNullable(input.company_id)
+  if (companyId) revalidatePath(`/admin/companies/${companyId}`)
+  redirect(companyId ? `/admin/companies/${companyId}?tab=scenarios` : '/admin/profiles')
 }
 
 export async function toggleProfileActive(id: string, isActive: boolean) {

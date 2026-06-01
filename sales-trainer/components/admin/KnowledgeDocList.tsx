@@ -46,7 +46,7 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs, projectP
 
   // PDF
   const [uploadError, setUploadError] = useState<string | null>(null)
-  const [uploadLoading, setUploadLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // URL
@@ -72,42 +72,52 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs, projectP
   // ─── Handlers de upload ───────────────────────────────────────────────────
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
 
     setUploadError(null)
-    setUploadLoading(true)
+    setUploadProgress({ current: 0, total: files.length })
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('company_id', companyId)
+    const errors: string[] = []
+    let lastLargeDoc: PendingCompress | null = null
 
-    try {
-      const res = await fetch('/api/knowledge/upload', { method: 'POST', body: formData })
-      const data: unknown = await res.json()
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress({ current: i + 1, total: files.length })
+      const file = files[i]!
 
-      if (!res.ok) {
-        const errMsg = (data as { error?: string }).error ?? 'Erro ao fazer upload.'
-        setUploadError(errMsg)
-        return
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('company_id', companyId)
+
+      try {
+        const res = await fetch('/api/knowledge/upload', { method: 'POST', body: formData })
+        const data: unknown = await res.json()
+
+        if (!res.ok) {
+          errors.push(`${file.name}: ${(data as { error?: string }).error ?? 'Erro ao fazer upload.'}`)
+          continue
+        }
+
+        const { doc, truncated, chars } = data as { doc: KnowledgeDoc; truncated: boolean; chars: number }
+        setDocs((prev) => [doc, ...prev])
+
+        if (truncated) {
+          errors.push(`${file.name}: texto truncado em ${(MAX_TEXT_CHARS / 1000).toFixed(0)}k chars.`)
+        }
+
+        if (chars > COMPRESS_THRESHOLD) {
+          lastLargeDoc = { docId: doc.id, title: doc.title, chars }
+        }
+      } catch {
+        errors.push(`${file.name}: erro de rede.`)
       }
-
-      const { doc, truncated, chars } = data as { doc: KnowledgeDoc; truncated: boolean; chars: number }
-      setDocs((prev) => [doc, ...prev])
-
-      if (truncated) {
-        setUploadError(`Texto truncado em ${(MAX_TEXT_CHARS / 1000).toFixed(0)}k caracteres. Considere usar "Comprimir com IA".`)
-      }
-
-      if (chars > COMPRESS_THRESHOLD) {
-        setPendingCompress({ docId: doc.id, title: doc.title, chars })
-      }
-    } catch {
-      setUploadError('Erro de rede ao fazer upload.')
-    } finally {
-      setUploadLoading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
     }
+
+    if (errors.length) setUploadError(errors.join(' • '))
+    if (lastLargeDoc) setPendingCompress(lastLargeDoc)
+
+    setUploadProgress(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   async function handleUrlFetch(e: React.FormEvent) {
@@ -309,20 +319,23 @@ export function KnowledgeDocList({ companyId, companyName, initialDocs, projectP
                   ref={fileInputRef}
                   type="file"
                   accept="application/pdf"
+                  multiple
                   className="hidden"
                   onChange={(e) => void handleFileUpload(e)}
-                  disabled={uploadLoading}
+                  disabled={!!uploadProgress}
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadLoading}
+                  disabled={!!uploadProgress}
                   className="inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
                 >
                   <Upload className="size-4" />
-                  {uploadLoading ? 'Processando…' : 'Selecionar PDF'}
+                  {uploadProgress
+                    ? `Processando ${uploadProgress.current}/${uploadProgress.total}…`
+                    : 'Selecionar PDFs'}
                 </button>
-                <span className="text-xs text-neutral-400">Máximo 4MB · até 150k chars extraídos</span>
+                <span className="text-xs text-neutral-400">Máximo 4MB por arquivo · múltiplos arquivos permitidos</span>
               </div>
               {uploadError && (
                 <div className="mt-2 flex items-start gap-1.5 text-sm text-amber-700">

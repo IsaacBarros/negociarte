@@ -2,6 +2,7 @@ import { after } from 'next/server'
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 import { evaluateSession, type CustomCriteria, type CustomCriteriaStage } from '@/lib/ai/evaluator'
+import { modelFor } from '@/lib/ai/models'
 import { z } from 'zod'
 import type { Database, Json } from '@/types/database'
 
@@ -132,7 +133,7 @@ async function runEvaluation(session_id: string): Promise<void> {
     customCriteria,
   })
 
-  const model = process.env.OPENROUTER_EVAL_MODEL ?? 'openai/gpt-4o-mini'
+  const model = modelFor('evaluation')
 
   // Mapeia outcome do avaliador para o enum do banco
   const outcomeMap: Record<string, 'accepted' | 'rejected' | 'ended_by_errors'> = {

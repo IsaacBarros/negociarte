@@ -1,6 +1,7 @@
 'use client'
 
-import { RotateCcw } from 'lucide-react'
+import { useRef } from 'react'
+import { RotateCcw, Paperclip } from 'lucide-react'
 import { SuggestButton } from '@/components/profiles/SuggestButton'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
   suggestable?: boolean
   suggestLoading?: boolean
   onSuggest?: () => void
+  onUploadSuggest?: (file: File) => void
   isPresetField?: boolean
   onResetPreset?: () => void
   children: React.ReactNode
@@ -24,10 +26,13 @@ export function ProfileFormField({
   suggestable,
   suggestLoading = false,
   onSuggest,
+  onUploadSuggest,
   isPresetField,
   onResetPreset,
   children,
 }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   return (
     <div className="space-y-1.5">
       <div className="flex min-h-8 items-center justify-between gap-3">
@@ -51,6 +56,30 @@ export function ProfileFormField({
             >
               <RotateCcw className="size-3.5" />
             </button>
+          )}
+          {onUploadSuggest && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt,application/pdf,text/plain"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) onUploadSuggest(file)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={suggestLoading}
+                title="Preencher a partir de um PDF ou TXT"
+                className="inline-flex size-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+              >
+                <Paperclip className="size-3.5" />
+              </button>
+            </>
           )}
           {suggestable && onSuggest && <SuggestButton loading={suggestLoading} onClick={onSuggest} />}
         </div>

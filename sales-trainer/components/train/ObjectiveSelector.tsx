@@ -1,28 +1,28 @@
 'use client'
 
-import { useState } from 'react'
 import { Check } from 'lucide-react'
 import {
   SESSION_OBJECTIVES,
   SESSION_OBJECTIVE_LABELS,
-  type SessionObjective,
 } from '@/lib/schemas/session'
 
 interface Props {
   /** Objetivos disponíveis. Se vazio/null, usa os 5 padrões do sistema. */
   availableObjectives?: string[] | null
   /** Valor atual selecionado */
-  value?: SessionObjective | null
-  onChange: (objective: SessionObjective) => void
+  value?: string | null
+  onChange: (objective: string) => void
 }
 
 export function ObjectiveSelector({ availableObjectives, value, onChange }: Props) {
-  const objectives: SessionObjective[] =
+  const objectives: string[] =
     availableObjectives && availableObjectives.length > 0
-      ? (availableObjectives.filter((o): o is SessionObjective =>
-          SESSION_OBJECTIVES.includes(o as SessionObjective),
-        ))
+      ? availableObjectives
       : [...SESSION_OBJECTIVES]
+
+  function labelFor(obj: string): string {
+    return SESSION_OBJECTIVE_LABELS[obj as keyof typeof SESSION_OBJECTIVE_LABELS] ?? obj
+  }
 
   return (
     <div className="space-y-2">
@@ -47,7 +47,7 @@ export function ObjectiveSelector({ availableObjectives, value, onChange }: Prop
               ) : (
                 <span className="size-4 shrink-0 rounded-full border border-current opacity-40" />
               )}
-              <span>{SESSION_OBJECTIVE_LABELS[obj]}</span>
+              <span>{labelFor(obj)}</span>
             </button>
           )
         })}

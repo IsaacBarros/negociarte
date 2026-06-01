@@ -111,7 +111,7 @@ ${SCORE_SCALE}
      Score 5 = confirmou entendimento mútuo e definiu próximos passos claros; 3 = encerramento parcial; 1 = não encerrou ou deixou a visita sem conclusão.
 
 Para cada comportamento, forneça:
-- score: inteiro de 1 a 5
+- score: inteiro de 0 a 5
 - evidence: trecho ou observação da conversa que justifica o score (máximo 2 frases em português)
 
 Além disso, forneça:

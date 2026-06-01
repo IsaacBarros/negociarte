@@ -4,6 +4,7 @@ import type { CustomerProfileInput } from '@/lib/schemas/profile'
 export interface StepProps {
   form: UseFormReturn<CustomerProfileInput>
   suggestField: (field: keyof CustomerProfileInput) => Promise<void>
+  suggestFieldFromDoc: (field: keyof CustomerProfileInput, file: File) => Promise<void>
   suggestingField: keyof CustomerProfileInput | null
   companies?: {
     id: string
