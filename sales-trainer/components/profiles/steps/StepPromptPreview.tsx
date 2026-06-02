@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Check, Copy, AlertTriangle, RotateCcw, RefreshCw } from 'lucide-react'
 import { buildPersonaPrompt } from '@/lib/ai/prompts/persona-template'
 import type { CustomerProfileInput } from '@/lib/schemas/profile'
@@ -18,11 +18,6 @@ interface Props {
 }
 
 export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, customerUpdatedAt, onPromptChange, onReloadFromSource }: Props) {
-  const [copied, setCopied] = useState(false)
-  const [editedPrompt, setEditedPrompt] = useState('')
-  const [reloadPending, setReloadPending] = useState(false)
-  const isFirstRender = useRef(true)
-
   const isStale = useMemo(() => {
     if (!profileUpdatedAt) return false
     const profileDate = new Date(profileUpdatedAt).getTime()
@@ -73,13 +68,12 @@ export function StepPromptPreview({ values, profileUpdatedAt, companyUpdatedAt, 
     return buildPersonaPrompt(asProfile)
   }, [values])
 
-  // Sincroniza editedPrompt com o gerado apenas na primeira renderização
-  useEffect(() => {
-    if (isFirstRender.current) {
-      setEditedPrompt(generatedPrompt)
-      isFirstRender.current = false
-    }
-  }, [generatedPrompt])
+  const [copied, setCopied] = useState(false)
+  const [editedPrompt, setEditedPrompt] = useState(() => {
+    const saved = values.system_prompt?.trim()
+    return saved ? values.system_prompt! : generatedPrompt
+  })
+  const [reloadPending, setReloadPending] = useState(false)
 
   // Após reload de campos, sincroniza editedPrompt com o generatedPrompt atualizado
   useEffect(() => {

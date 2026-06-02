@@ -117,11 +117,7 @@ export function buildPersonaPrompt(profile: CustomerProfile): string {
   lines.push('12. Se houver muitos erros graves ou repetidos, conduza a conversa para uma recusa natural. Se o objetivo for atingido, conduza para aceite ou proximo passo concreto.')
   lines.push('13. Quando encerrar a conversa, declare claramente a decisao do cliente: aceitar, avancar para proximo passo ou recusar. De uma razao natural do cliente, sem revelar criterios de avaliacao.')
 
-  if (profile.difficulty_level && profile.difficulty_level !== 'trainee_choice') {
-    lines.push(`14. Nivel de dificuldade inicial: ${difficultyLabels[profile.difficulty_level] ?? profile.difficulty_level}. Ajuste dinamicamente conforme a aderencia do vendedor.`)
-  }
-
-  lines.push('15. Responda em portugues brasileiro, com linguagem coerente com o perfil do cliente.')
+  lines.push('14. Responda em portugues brasileiro, com linguagem coerente com o perfil do cliente.')
 
   return lines.join('\n')
 }

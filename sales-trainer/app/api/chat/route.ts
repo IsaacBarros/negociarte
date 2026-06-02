@@ -155,8 +155,7 @@ export async function POST(request: Request) {
     } | null
 
     if (behaviorStyle) {
-      behaviorPrompt = [
-        '',
+      behaviorPrompt = '\n\n' + [
         '== ESTILO COMPORTAMENTAL SORTEADO PARA ESTA SIMULACAO ==',
         `Estilo: ${behaviorStyle.name}`,
         `Descricao: ${behaviorStyle.description}`,
