@@ -544,6 +544,107 @@ Essas mudanças são **necessárias** — a migration 0018_project_join_code tor
 - Radar chart no FeedbackCard.
 - ~~Aplicar migration 0025 no Supabase Dashboard.~~ ✓
 
+---
+
+## 2026-06-05 — Continuidade da knowledge base entre agentes
+
+**Categoria:** Arquitetura | Ops
+
+O projeto usa `.claude/knowledge/` como memória operacional durável. Mesmo quando o agente ativo não é o Claude, essa pasta continua sendo a fonte de contexto acumulado do produto: decisões não-óbvias, bugs com diagnóstico difícil, padrões locais e pendências que afetam tarefas futuras.
+
+### Decisão
+
+- Manter o formato existente em `learnings.md`: entradas cronológicas, com categoria, foco no **por que** e nas consequências.
+- Registrar apenas aprendizados reutilizáveis. Não registrar comandos triviais, respostas de suporte simples ou cada pequena alteração de código.
+- Criar artigos em `wiki/` quando um tema virar referência estável ou precisar de explicação mais longa; manter `learnings.md` como trilha cronológica.
+- Antes de tarefas maiores, consultar `CLAUDE.md`, `sales-trainer/lib/CLAUDE.md`, `sales-trainer/components/CLAUDE.md` e `.claude/knowledge/learnings.md`.
+
+### Padrão operacional
+
+- Ao corrigir bug com causa não óbvia, registrar causa raiz, decisão e pendência residual.
+- Ao mudar arquitetura, fluxo de IA, schema/RLS, auth ou pipeline de PDF/knowledge, registrar a justificativa.
+- Ao descobrir documentação desatualizada, registrar o fato e preferir o código + migrations + commits como fonte de verdade.
+
+---
+
+## 2026-06-05 — pnpm com instalação incompleta e store global inacessível
+
+**Categoria:** Ops | Bug
+
+O projeto voltou a apresentar erro de módulos ausentes mesmo com `node_modules` presente. O caso reproduzido foi `tsc --noEmit` falhando em `app/layout.tsx` com `Cannot find module 'geist/font/sans'` e `geist/font/mono`.
+
+### Causa
+
+- `geist` estava declarado em `sales-trainer/package.json` e no lockfile, mas não existia em `sales-trainer/node_modules/.pnpm`.
+- O comando `pnpm` dentro do sandbox falhava antes de instalar com `unable to open database file`, indicando store/cache global inacessível.
+- Forçar store local (`PNPM_HOME`/`PNPM_STORE_DIR`) evitou o erro de banco, mas caiu em `fetch failed` por restrição de rede.
+
+### Correção
+
+Rodar `pnpm install --frozen-lockfile` fora do sandbox reconstruiu a instalação e baixou os pacotes ausentes. Depois disso, `node_modules/.bin/tsc --noEmit` passou limpo e `require.resolve()` encontrou `geist/font/sans`, `geist/font/mono`, `pdfjs-dist`, `next` e `@supabase/supabase-js`.
+
+### Padrão operacional
+
+- Se `pnpm` falhar com `unable to open database file`, não assumir bug de código; é problema operacional de store/cache.
+- Para diagnosticar módulo ausente, checar simultaneamente `package.json`, `pnpm-lock.yaml`, `node_modules/<pkg>` e `node_modules/.pnpm/<pkg>`.
+- Preferir validar com `node_modules/.bin/tsc --noEmit` quando o binário global do `pnpm` estiver quebrado.
+
+---
+
+## 2026-06-05 — Pendência: drag and drop para PDFs da knowledge base
+
+**Categoria:** UI
+
+Pedido do usuário registrado para implementação futura, não executar agora.
+
+### Pendência
+
+Adicionar suporte a arrastar e soltar PDFs no campo de upload da base de conhecimento durante a criação/edição de projeto. Hoje o fluxo aceita upload apenas pelo botão/seletor de arquivo.
+
+### Contexto provável
+
+- Área relacionada: `KnowledgeDocList` / uploads de knowledge base por empresa.
+- O fluxo já suporta upload múltiplo sequencial de PDF; a melhoria esperada é aceitar os mesmos arquivos via drop zone, preservando progresso e tratamento de erros por arquivo.
+- Manter compatibilidade com o botão atual de selecionar arquivos.
+
+---
+
+## 2026-06-05 — Briefing obrigatório antes da simulação (revertido)
+
+**Categoria:** UI | Arquitetura
+
+Ideia explorada e revertida no mesmo dia porque o entendimento do cliente mudou. Não há implementação ativa.
+
+### Objetivo
+
+Quando o seller clicar em "Conhecer cliente", a experiência deve conduzir para um briefing antes do início da conversa. As informações do briefing precisam ser exibidas de forma clara e o seller só pode começar a simulação depois de confirmar que leu o briefing.
+
+### Contexto atual
+
+- A página `/train/cliente/[profileId]` já mostra dados de empresa, cliente, histórico, contexto da visita, objetivo e critério de sucesso.
+- `PreSessionForm` cria a sessão com objetivo/dificuldade e `createSession` redireciona direto para `/train/[sessionId]`.
+- Existe `/train/[sessionId]/briefing`, mas hoje a própria página indica que ficou como fluxo legado: se `chosen_objective` já existe, redireciona direto ao chat.
+
+### Direção proposta
+
+- Transformar `/train/[sessionId]/briefing` em etapa obrigatória para sessões ativas ainda não confirmadas.
+- Persistir confirmação no banco, por exemplo com `training_sessions.briefing_confirmed_at`.
+- Alterar `createSession` para redirecionar para `/train/[sessionId]/briefing`, mesmo quando objetivo/dificuldade já foram escolhidos.
+- Proteger `/train/[sessionId]`: se a sessão está ativa e o briefing ainda não foi confirmado, redirecionar de volta para `/train/[sessionId]/briefing`.
+- Criar ação server-side para confirmar leitura do briefing e só então navegar para o chat.
+
+### Alternativa preferida pelo usuário
+
+O usuário sugeriu que a experiência não precisa ser uma rota dedicada: pode ser um modal sobre o chat, com fundo desfocado/escurecido e botão "Estou preparado". Essa alternativa mantém a sensação de entrar na sala da simulação, mas bloqueia a conversa até a confirmação.
+
+Para testar rapidamente sem migration, a confirmação deve ser salva no navegador com `localStorage`, usando chave por sessão (`negociarte:briefing-confirmed:<sessionId>`). Isso confirma a leitura apenas naquele navegador/dispositivo e não impede bypass real, mas é suficiente para validar a experiência antes de decidir se vira persistência no banco.
+
+### Status
+
+- Implementação com modal + `localStorage` foi removida.
+- Não foi criada migration nem coluna nova no Supabase.
+- Se essa demanda voltar, confirmar primeiro o fluxo real desejado com o cliente antes de implementar.
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto
