@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
 import { requireAuth, requireAdmin } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { CreateSessionSchema, UpdateSessionStatusSchema, UpdateObjectiveSchema, DeleteSessionsSchema } from '@/lib/schemas/session'
@@ -78,6 +79,7 @@ export async function createSession(rawInput: unknown) {
 }
 
 export async function abandonActiveScenarioSession(customerProfileId: string) {
+  const parsedCustomerProfileId = z.string().uuid().parse(customerProfileId)
   const user = await requireAuth()
   const supabase = await createClient()
 
@@ -85,7 +87,7 @@ export async function abandonActiveScenarioSession(customerProfileId: string) {
     .from('training_sessions')
     .select('id')
     .eq('seller_id', user.id)
-    .eq('customer_profile_id', customerProfileId)
+    .eq('customer_profile_id', parsedCustomerProfileId)
     .eq('status', 'active')
     .order('started_at', { ascending: false })
 
@@ -106,7 +108,7 @@ export async function abandonActiveScenarioSession(customerProfileId: string) {
     .update({ status: 'abandoned', ended_at: new Date().toISOString() })
     .in('id', activeSessionIds)
     .eq('seller_id', user.id)
-    .eq('customer_profile_id', customerProfileId)
+    .eq('customer_profile_id', parsedCustomerProfileId)
     .eq('status', 'active')
 
   if (abandonError) {
@@ -117,8 +119,8 @@ export async function abandonActiveScenarioSession(customerProfileId: string) {
   for (const sessionId of activeSessionIds) {
     revalidatePath(`/train/${sessionId}`)
   }
-  revalidatePath(`/train/cliente/${customerProfileId}`)
-  redirect(`/train/cliente/${customerProfileId}`)
+  revalidatePath(`/train/cliente/${parsedCustomerProfileId}`)
+  redirect(`/train/cliente/${parsedCustomerProfileId}`)
 }
 
 export async function updateSessionObjective(sessionId: string, rawInput: unknown) {

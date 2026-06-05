@@ -98,6 +98,7 @@ export default async function SessionPage({
         profileName={profile.name}
         initialMessages={initialMessages}
         sessionEnded={isEnded}
+        sessionStatus={session.status}
         briefingContext={{
           buyerRole: profile.buyer_role,
           visibleBriefing: profile.visible_briefing,

@@ -21,6 +21,7 @@ interface Props {
   profileName: string
   initialMessages: UIMessage[]
   sessionEnded: boolean
+  sessionStatus: string
   briefingContext?: BriefingContext
 }
 
@@ -30,7 +31,14 @@ const scenarioLabel: Record<string, string> = {
   closing: 'Fechamento',
 }
 
-export function ChatWindow({ sessionId, profileName, initialMessages, sessionEnded, briefingContext }: Props) {
+export function ChatWindow({
+  sessionId,
+  profileName,
+  initialMessages,
+  sessionEnded,
+  sessionStatus,
+  briefingContext,
+}: Props) {
   const router = useRouter()
   const [input, setInput] = useState('')
   const [briefingOpen, setBriefingOpen] = useState(false)
@@ -169,7 +177,9 @@ export function ChatWindow({ sessionId, profileName, initialMessages, sessionEnd
 
       {sessionEnded && (
         <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-3 text-center text-sm text-neutral-500">
-          Sessão encerrada. O feedback estará disponível em breve.
+          {sessionStatus === 'abandoned'
+            ? 'Sessão abandonada. Nenhum relatório será gerado.'
+            : 'Sessão encerrada. O feedback estará disponível em breve.'}
         </div>
       )}
     </div>
