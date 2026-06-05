@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useSyncExternalStore, useTransition } from 'react'
+import Image from 'next/image'
 import QRCode from 'qrcode'
 import { regenerateJoinCode } from '@/lib/actions/project-members'
 
@@ -15,7 +16,7 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
   const [showConfirm, setShowConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [showQrModal, setShowQrModal] = useState(false)
-  const [qrSvg, setQrSvg] = useState('')
+  const [qrDataUrl, setQrDataUrl] = useState('')
   const [qrForLink, setQrForLink] = useState('')
   const [isGeneratingQr, setIsGeneratingQr] = useState(false)
   const [qrError, setQrError] = useState<string | null>(null)
@@ -35,7 +36,7 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
       const result = await regenerateJoinCode({ company_id: companyId })
       setCode(result.join_code)
       setShowConfirm(false)
-      setQrSvg('')
+      setQrDataUrl('')
       setQrForLink('')
     })
   }
@@ -44,12 +45,11 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
     setShowQrModal(true)
     setQrError(null)
 
-    if (qrSvg && qrForLink === joinLink) return
+    if (qrDataUrl && qrForLink === joinLink) return
 
     setIsGeneratingQr(true)
     try {
-      const svg = await QRCode.toString(joinLink, {
-        type: 'svg',
+      const dataUrl = await QRCode.toDataURL(joinLink, {
         width: 720,
         margin: 2,
         color: {
@@ -57,7 +57,7 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
           light: '#ffffff',
         },
       })
-      setQrSvg(svg)
+      setQrDataUrl(dataUrl)
       setQrForLink(joinLink)
     } catch (err) {
       console.error(err)
@@ -147,18 +147,22 @@ export function JoinCodeSection({ companyId, initialCode }: JoinCodeSectionProps
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 p-6">
+            <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 p-4 sm:min-h-[360px] sm:p-6">
                 {isGeneratingQr && (
                   <p className="text-sm text-neutral-500">Gerando QR Code...</p>
                 )}
                 {qrError && !isGeneratingQr && (
                   <p className="text-sm text-red-600">{qrError}</p>
                 )}
-                {qrSvg && !isGeneratingQr && !qrError && (
-                  <div
-                    className="w-full max-w-[min(64vh,620px)]"
-                    dangerouslySetInnerHTML={{ __html: qrSvg }}
+                {qrDataUrl && !isGeneratingQr && !qrError && (
+                  <Image
+                    src={qrDataUrl}
+                    alt="QR Code do link de acesso"
+                    width={720}
+                    height={720}
+                    unoptimized
+                    className="aspect-square w-[clamp(220px,70vmin,520px)] max-h-[62vh] max-w-full object-contain"
                   />
                 )}
               </div>
