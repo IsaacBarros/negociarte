@@ -153,6 +153,14 @@ export default async function AdminSessionDetailPage({
               </button>
             </form>
           </div>
+        ) : session.status === 'abandoned' ? (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+            <p className="text-sm font-medium text-neutral-800">Sessão abandonada</p>
+            <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+              Esta simulação foi encerrada sem avaliação. Relatórios por IA são gerados apenas
+              quando o vendedor escolhe encerrar e avaliar.
+            </p>
+          </div>
         ) : (
           <FeedbackPoller sessionId={id} />
         )}

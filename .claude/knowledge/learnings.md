@@ -645,6 +645,37 @@ Para testar rapidamente sem migration, a confirmação deve ser salva no navegad
 - Não foi criada migration nem coluna nova no Supabase.
 - Se essa demanda voltar, confirmar primeiro o fluxo real desejado com o cliente antes de implementar.
 
+---
+
+## 2026-06-05 — Sessão ativa do mesmo cenário ao clicar em "Conhecer cliente"
+
+**Categoria:** UI | Bug
+
+O problema real não era exigir briefing antes do chat. O fluxo incorreto era: quando o seller já tinha qualquer sessão ativa e clicava em "Conhecer cliente", `/train/cliente/[profileId]` redirecionava imediatamente para a sessão ativa, sem explicar o conflito nem permitir iniciar uma nova simulação do mesmo cenário.
+
+### Decisão
+
+- Se a sessão ativa é de outro cenário, não redirecionar automaticamente; o seller deve conseguir abrir a tela de configuração do cenário que clicou.
+- Se a sessão ativa é do mesmo cenário (`training_sessions.customer_profile_id === profileId`), não redirecionar automaticamente.
+- Mostrar um modal explicando que já existe uma sessão ativa para aquele cenário.
+- Oferecer duas ações:
+  - "Abrir sessão atual": leva para `/train/[sessionId]` para o seller gerenciar a sessão existente.
+  - "Criar nova sessão": abandona a sessão ativa desse cenário e volta para `/train/cliente/[profileId]`, permitindo configurar objetivo/dificuldade de uma nova simulação.
+
+### Implementação
+
+- Novo componente client `ActiveScenarioSessionModal`.
+- Nova server action `abandonActiveScenarioSession`.
+- A nova sessão não é criada automaticamente. Depois de abandonar a antiga, o seller retorna para a tela de criação/configuração da simulação.
+
+### Regra de avaliação
+
+Sessões com `status = 'abandoned'` não geram relatório por IA e não devem exibir polling de feedback. Relatório só é gerado quando o usuário escolhe explicitamente encerrar e avaliar (`status = 'completed'`).
+
+### Correção adicional
+
+Não usar `.maybeSingle()` para buscar sessão ativa do seller. Se por bug anterior existir mais de uma sessão ativa, `.maybeSingle()` pode falhar e a página agir como se não houvesse sessão ativa. O fluxo de `/train/cliente/[profileId]` agora busca uma lista ordenada de sessões ativas e só mostra modal quando há sessão ativa do mesmo cenário. Sessões ativas de outros cenários não bloqueiam a tela de configuração do cenário clicado.
+
 <!-- Nova entrada: copie o bloco abaixo e preencha -->
 <!--
 ## YYYY-MM-DD — Título curto

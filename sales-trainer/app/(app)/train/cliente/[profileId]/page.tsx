@@ -1,8 +1,9 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { requireAuth } from '@/lib/actions/auth-helpers'
 import { createClient } from '@/lib/supabase/server'
 import { PreSessionForm } from '@/components/train/PreSessionForm'
+import { ActiveScenarioSessionModal } from '@/components/train/ActiveScenarioSessionModal'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Conhecer cliente — Negociarte' }
@@ -34,18 +35,26 @@ export default async function ClientDetailPage({
   const user = await requireAuth()
   const supabase = await createClient()
 
-  // Verifica se seller tem sessão ativa (bloqueia nova sessão)
-  const { data: activeSessionRaw } = await supabase
+  // Se houver sessão ativa do mesmo cenário, mostra modal com opção de abrir ou reiniciar.
+  // Sessões ativas de outros cenários não bloqueiam a configuração do cenário atual.
+  const { data: activeSessionsRaw } = await supabase
     .from('training_sessions')
-    .select('id')
+    .select('id, title, customer_profile_id, difficulty_level, started_at')
     .eq('seller_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('started_at', { ascending: false })
+    .limit(10)
 
-  if (activeSessionRaw) {
-    const s = activeSessionRaw as { id: string }
-    redirect(`/train/${s.id}`)
-  }
+  const activeSessions = (activeSessionsRaw ?? []) as {
+    id: string
+    title: string | null
+    customer_profile_id: string
+    difficulty_level: 'easy' | 'medium' | 'hard' | null
+    started_at: string
+  }[]
+
+  const sameScenarioActiveSession =
+    activeSessions.find((session) => session.customer_profile_id === profileId) ?? null
 
   // Busca o perfil com dados de empresa e cliente
   const { data: profileRaw } = await supabase
@@ -130,6 +139,18 @@ export default async function ClientDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      {sameScenarioActiveSession && (
+        <ActiveScenarioSessionModal
+          activeSession={{
+            id: sameScenarioActiveSession.id,
+            title: sameScenarioActiveSession.title,
+            difficultyLevel: sameScenarioActiveSession.difficulty_level,
+          }}
+          profileId={profile.id}
+          profileName={profile.name}
+        />
+      )}
+
       {/* Breadcrumb */}
       <div className="mb-6 flex items-center gap-2 text-sm text-neutral-400">
         <Link href="/train" className="hover:text-neutral-700">

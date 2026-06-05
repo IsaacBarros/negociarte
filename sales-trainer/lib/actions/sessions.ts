@@ -77,6 +77,50 @@ export async function createSession(rawInput: unknown) {
   redirect(`/train/${session.id}`)
 }
 
+export async function abandonActiveScenarioSession(customerProfileId: string) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  const { data: activeSessionsRaw, error: activeSessionError } = await supabase
+    .from('training_sessions')
+    .select('id')
+    .eq('seller_id', user.id)
+    .eq('customer_profile_id', customerProfileId)
+    .eq('status', 'active')
+    .order('started_at', { ascending: false })
+
+  if (activeSessionError) {
+    throw new Error('Erro ao verificar sessão ativa.')
+  }
+
+  const activeSessions = (activeSessionsRaw ?? []) as { id: string }[]
+
+  if (activeSessions.length === 0) {
+    throw new Error('Não há sessão ativa para este cenário.')
+  }
+
+  const activeSessionIds = activeSessions.map((session) => session.id)
+
+  const { error: abandonError } = await supabase
+    .from('training_sessions')
+    .update({ status: 'abandoned', ended_at: new Date().toISOString() })
+    .in('id', activeSessionIds)
+    .eq('seller_id', user.id)
+    .eq('customer_profile_id', customerProfileId)
+    .eq('status', 'active')
+
+  if (abandonError) {
+    throw new Error('Erro ao abandonar a sessão ativa.')
+  }
+
+  revalidatePath('/train')
+  for (const sessionId of activeSessionIds) {
+    revalidatePath(`/train/${sessionId}`)
+  }
+  revalidatePath(`/train/cliente/${customerProfileId}`)
+  redirect(`/train/cliente/${customerProfileId}`)
+}
+
 export async function updateSessionObjective(sessionId: string, rawInput: unknown) {
   const { chosen_objective } = UpdateObjectiveSchema.parse(rawInput)
   const user = await requireAuth()

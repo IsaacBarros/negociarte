@@ -102,17 +102,19 @@ export default async function TrainPage() {
   const supabase = await createClient()
 
   // Sessão ativa
-  const { data: activeSessionRaw } = await supabase
+  const { data: activeSessionsRaw } = await supabase
     .from('training_sessions')
-    .select('id, title, customer_profile_id')
+    .select('id, title, customer_profile_id, started_at')
     .eq('seller_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('started_at', { ascending: false })
+    .limit(1)
 
-  const activeSession = activeSessionRaw as {
+  const activeSession = ((activeSessionsRaw ?? [])[0] ?? null) as {
     id: string
     title: string | null
     customer_profile_id: string
+    started_at: string
   } | null
 
   // Empresas às quais o seller está vinculado

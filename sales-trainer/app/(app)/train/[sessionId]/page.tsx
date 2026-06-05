@@ -78,9 +78,11 @@ export default async function SessionPage({
   }))
 
   const isEnded = session.status !== 'active'
+  const isCompleted = session.status === 'completed'
+  const isAbandoned = session.status === 'abandoned'
 
   let feedback: Feedback | null = null
-  if (isEnded) {
+  if (isCompleted) {
     const { data: fb } = await supabase
       .from('session_feedback')
       .select('*')
@@ -106,7 +108,19 @@ export default async function SessionPage({
       />
       {isEnded && (
         <div className="absolute bottom-0 right-0 top-14 w-80 overflow-y-auto border-l border-neutral-200 bg-white p-4">
-          {feedback ? (
+          {isAbandoned ? (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <p className="text-sm font-medium text-neutral-800">Sessão abandonada</p>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                Esta simulação foi encerrada sem avaliação. Relatórios por IA são gerados apenas
+                quando você escolhe encerrar e avaliar.
+              </p>
+              <PostSessionActions
+                customerProfileId={session.customer_profile_id}
+                lastDifficultyLevel={session.difficulty_level}
+              />
+            </div>
+          ) : feedback ? (
             <div className="space-y-6">
               <FeedbackCard feedback={feedback} />
               <PostSessionActions
